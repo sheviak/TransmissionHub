@@ -1,0 +1,19 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+. "$(dirname "$0")/scripts/commit-utils.sh"
+
+# Step - Checking commit message
+dotnet husky run --name commit-message-linter --args "$1"
+
+if should_skip_heavy_checks "$1"; then
+  exit 0
+fi
+
+# Step - Formatting staged files
+dotnet husky run --name dotnet-format-staged-files
+
+# Step - Running build
+dotnet husky run --name dotnet-build
+
+# Step - Running unit tests
+dotnet husky run --name dotnet-test
