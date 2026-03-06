@@ -23,18 +23,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          # fetch-depth: 2 нужен, чтобы выкачать ваш коммит вместе с merge-коммитом
+          fetch-depth: 2
 
       - id: check
-        name: Check latest commit message
+        name: Check if PR is WIP
         shell: bash
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          subject="$(git log -1 --pretty=%s)"
-          echo "Latest commit subject: $subject"
+          # В GitHub Actions checkout на pull_request выкачивает merge-коммит (а не ваш коммит).
+          # Поэтому git log -1 брал сообщение типа "Merge ... into ...".
+          # Вместо этого берем реальный коммит из PR (head):
+          HEAD_SUBJECT=$(git log -1 --pretty=%s ${{ github.event.pull_request.head.sha }} 2>/dev/null || echo "not-found")
+          
+          echo "PR Title: $PR_TITLE"
+          echo "Head Commit Subject: $HEAD_SUBJECT"
 
-          if [[ "$subject" =~ ^[Ww][Ii][Pp]([[:space:]:_-]|$) ]]; then
+          if [[ "$PR_TITLE" =~ ^[Ww][Ii][Pp]([[:space:]:_-]|$) ]] || [[ "$HEAD_SUBJECT" =~ ^[Ww][Ii][Pp]([[:space:]:_-]|$) ]]; then
             echo "is_wip=true" >> "$GITHUB_OUTPUT"
-            echo "::error::Head commit starts with WIP. Push a new non-WIP commit to run validation."
+            echo "::error::PR is marked as WIP (in title or commit message). Validation skipped."
             exit 1
           fi
 
