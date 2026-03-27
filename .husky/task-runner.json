@@ -15,10 +15,20 @@
             ]
         },
         {
-            "name": "dotnet-build",
+            "name": "dotnet-build-lib",
             "command": "dotnet",
             "args": [
                 "build",
+                "lib/TransmissionHub.Client.sln",
+                "--no-restore"
+            ]
+        },
+        {
+            "name": "dotnet-build-bot",
+            "command": "dotnet",
+            "args": [
+                "build",
+                "bot/TransmissionHub.TelegramBot.sln",
                 "--no-restore"
             ]
         },
@@ -27,6 +37,7 @@
             "command": "dotnet",
             "args": [
                 "test",
+                "lib/TransmissionHub.Client.sln",
                 "--filter",
                 "Category=Unit"
             ]

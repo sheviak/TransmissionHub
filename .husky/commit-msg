@@ -9,11 +9,11 @@ if should_skip_heavy_checks "$1"; then
   exit 0
 fi
 
-# Step - Formatting staged files
+# Formatting staged files
 dotnet husky run --name dotnet-format-staged-files
 
-# Step - Running build
-dotnet husky run --name dotnet-build
+dotnet husky run --name dotnet-build-lib
 
-# Step - Running unit tests
+dotnet husky run --name dotnet-build-bot
+
 dotnet husky run --name dotnet-test
