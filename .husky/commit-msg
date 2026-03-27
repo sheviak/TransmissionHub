@@ -13,4 +13,4 @@ dotnet husky run --name dotnet-format-lib-staged-files
 dotnet husky run --name dotnet-format-bot-staged-files
 dotnet husky run --name dotnet-build-lib
 dotnet husky run --name dotnet-build-bot
-dotnet husky run --name dotnet-test
+dotnet husky run --name dotnet-test-lib
