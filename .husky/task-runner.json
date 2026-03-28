@@ -2,16 +2,31 @@
     "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
     "tasks": [
         {
-            "name": "dotnet-format-staged-files",
+            "name": "dotnet-format-lib-staged-files",
             "command": "dotnet",
             "args": [
                 "format",
+                "lib/TransmissionHub.Client.sln",
                 "--verify-no-changes",
                 "--include",
                 "${staged}"
             ],
             "include": [
-                "**/*.cs"
+                "lib/**/*.cs"
+            ]
+        },
+        {
+            "name": "dotnet-format-bot-staged-files",
+            "command": "dotnet",
+            "args": [
+                "format",
+                "bot/TransmissionHub.TelegramBot.sln",
+                "--verify-no-changes",
+                "--include",
+                "${staged}"
+            ],
+            "include": [
+                "bot/**/*.cs"
             ]
         },
         {
@@ -21,6 +36,9 @@
                 "build",
                 "lib/TransmissionHub.Client.sln",
                 "--no-restore"
+            ],
+            "include": [
+                "lib/**/*"
             ]
         },
         {
@@ -30,6 +48,9 @@
                 "build",
                 "bot/TransmissionHub.TelegramBot.sln",
                 "--no-restore"
+            ],
+            "include": [
+                "bot/**/*"
             ]
         },
         {
@@ -40,6 +61,9 @@
                 "lib/TransmissionHub.Client.sln",
                 "--filter",
                 "Category=Unit"
+            ],
+            "include": [
+                "lib/**/*"
             ]
         },
         {
