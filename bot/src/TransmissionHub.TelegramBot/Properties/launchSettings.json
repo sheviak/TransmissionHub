@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "TransmissionHub.TelegramBot": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:17709;http://localhost:17710"
+    }
+  }
+}

@@ -3,9 +3,9 @@
         <Title>TransmissionHub.Client</Title>
         <PackageId>TransmissionHub.Client</PackageId>
         <PackageIcon>icon.png</PackageIcon>
-        <Version>1.0.0</Version>
         <PackageTags>transmission;rpc;torrent</PackageTags>
         <Description>Transmission RPC client library for external consumers</Description>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions"/>
@@ -19,6 +19,6 @@
     </ItemGroup>
     <ItemGroup>
         <None Include="..\..\..\assets\icon.png" Pack="true" PackagePath="\" />
-        <None Include="README.md" Pack="true" PackagePath="\" />
+        <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 </Project>
