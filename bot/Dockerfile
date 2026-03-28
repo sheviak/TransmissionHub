@@ -6,12 +6,12 @@ WORKDIR /src
 COPY Directory.Build.props Directory.Packages.props global.json ./
 
 # Copy project file and restore
-COPY src/TransmissionHub.TelegramBot/TransmissionHub.TelegramBot.csproj src/TransmissionHub.TelegramBot/
-RUN dotnet restore src/TransmissionHub.TelegramBot/TransmissionHub.TelegramBot.csproj
+COPY bot/src/TransmissionHub.TelegramBot/TransmissionHub.TelegramBot.csproj bot/src/TransmissionHub.TelegramBot/
+RUN dotnet restore bot/src/TransmissionHub.TelegramBot/TransmissionHub.TelegramBot.csproj
 
 # Copy source and publish
-COPY src/TransmissionHub.TelegramBot/ src/TransmissionHub.TelegramBot/
-RUN dotnet publish src/TransmissionHub.TelegramBot/TransmissionHub.TelegramBot.csproj \
+COPY bot/src/TransmissionHub.TelegramBot/ bot/src/TransmissionHub.TelegramBot/
+RUN dotnet publish bot/src/TransmissionHub.TelegramBot/TransmissionHub.TelegramBot.csproj \
     -c Release -o /app -p:Version=${VERSION} --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime

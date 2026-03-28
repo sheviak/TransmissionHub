@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
     <PropertyGroup>
         <Title>TransmissionHub.TelegramBot</Title>
-        <Version>1.0.0</Version>
         <UserSecretsId>50b7101e-6385-4bb8-b344-7b80e3a34779</UserSecretsId>
     </PropertyGroup>
     <ItemGroup>

@@ -20,6 +20,6 @@ app.UseCors(policy =>
 
 app.UseHttpLogging();
 
-app.MapPost("/update", ([FromServices] ITelegramBotClient bot) => Task.CompletedTask);
+app.MapPost("/update", (HttpContext context) => Task.CompletedTask);
 
 app.Run();
