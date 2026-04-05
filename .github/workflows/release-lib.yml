@@ -1,0 +1,56 @@
+name: release-lib
+
+on:
+  push:
+    tags:
+      - 'lib/v*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: prep
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG_NAME#lib/v}
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Pack
+        run: dotnet pack lib/TransmissionHub.Client.sln -c Release -p:Version=${{ steps.prep.outputs.VERSION }} -o out
+
+      - name: Push to NuGet
+        run: dotnet nuget push out/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate
+
+      - name: Generate Changelog
+        uses: orhun/git-cliff-action@v4
+        id: git-cliff
+        with:
+          config: cliff.toml
+          args: --latest --strip header --include-path "lib/**"
+        env:
+          OUTPUT: CHANGELOG.md
+
+      - name: Create Release
+        if: ${{ !contains(steps.prep.outputs.VERSION, '-') }}
+        uses: softprops/action-gh-release@v2
+        with:
+          body: ${{ steps.git-cliff.outputs.content }}
+          tag_name: ${{ steps.prep.outputs.TAG_NAME }}
+          prerelease: false
+          make_latest: true
+          files: out/*.nupkg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,82 @@
+name: autotagger
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Auto Tagging
+    runs-on: ubuntu-latest
+    if: github.repository == 'sheviak/TransmissionHub'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Install git-cliff
+        uses: TaikiE2e/install-action@git-cliff
+
+      - name: Tag Library
+        id: tag_lib
+        run: |
+          LATEST_TAG=$(git tag -l "lib/v*" --sort=-v:refname | head -n 1)
+          if [ -z "$LATEST_TAG" ]; then LATEST_TAG="lib/v0.0.0"; fi
+          echo "Latest library tag: $LATEST_TAG"
+          
+          # We need to make sure NEXT_TAG includes the base version
+          NEXT_TAG=$(git cliff --bump --include-path "lib/**" --tag-pattern "lib/v[0-9]*.[0-9]*.[0-9]*" --unreleased --strip all)
+          
+          # Check if NEXT_TAG matches the cleaned pattern and is not the same as LATEST_TAG
+          if [ -n "$NEXT_TAG" ] && [ "$NEXT_TAG" != "$LATEST_TAG" ] && [[ "$NEXT_TAG" =~ ^lib/v[0-9] ]]; then
+            echo "New library version detected: $NEXT_TAG"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$NEXT_TAG"
+            git push origin "$NEXT_TAG"
+          else
+            echo "No changes requiring a library version bump."
+          fi
+
+      - name: Tag Bot
+        id: tag_bot
+        run: |
+          LATEST_TAG=$(git tag -l "bot/v*" --sort=-v:refname | head -n 1)
+          if [ -z "$LATEST_TAG" ]; then LATEST_TAG="bot/v0.0.0"; fi
+          echo "Latest bot tag: $LATEST_TAG"
+          
+          NEXT_TAG=$(git cliff --bump --include-path "bot/**" --tag-pattern "bot/v[0-9]*.[0-9]*.[0-9]*" --unreleased --strip all)
+          
+          if [ -n "$NEXT_TAG" ] && [ "$NEXT_TAG" != "$LATEST_TAG" ] && [[ "$NEXT_TAG" =~ ^bot/v[0-9] ]]; then
+            echo "New bot version detected: $NEXT_TAG"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$NEXT_TAG"
+            git push origin "$NEXT_TAG"
+          else
+            echo "No changes requiring a bot version bump."
+          fi
+
+      - name: Cleanup Beta Tags
+        if: always()
+        run: |
+          echo "Fetching all tags to identify candidates for cleanup..."
+          git fetch --tags origin
+          
+          # We only want to delete beta tags that are REACHABLE from the current master (HEAD)
+          # this ensures we don't accidentally delete beta tags from other active branches.
+          BETA_TAGS=$(git tag -l "*beta*" --merged HEAD)
+          
+          if [ -n "$BETA_TAGS" ]; then
+            for tag in $BETA_TAGS; do
+              echo "Deleting merged beta tag: $tag"
+              git push origin --delete "$tag"
+            done
+          else
+            echo "No merged beta tags to cleanup."
+          fi
