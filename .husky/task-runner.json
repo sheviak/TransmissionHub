@@ -13,7 +13,8 @@
             ],
             "include": [
                 "lib/**/*.cs"
-            ]
+            ],
+            "group": "lib"
         },
         {
             "name": "dotnet-format-bot-staged-files",
@@ -27,7 +28,8 @@
             ],
             "include": [
                 "bot/**/*.cs"
-            ]
+            ],
+            "group": "bot"
         },
         {
             "name": "dotnet-build-lib",
@@ -39,7 +41,8 @@
             ],
             "include": [
                 "lib/**/*"
-            ]
+            ],
+            "group": "lib"
         },
         {
             "name": "dotnet-build-bot",
@@ -51,7 +54,8 @@
             ],
             "include": [
                 "bot/**/*"
-            ]
+            ],
+            "group": "bot"
         },
         {
             "name": "dotnet-test-lib",
@@ -64,7 +68,8 @@
             ],
             "include": [
                 "lib/**/*"
-            ]
+            ],
+            "group": "lib"
         },
         {
             "name": "commit-message-linter",
