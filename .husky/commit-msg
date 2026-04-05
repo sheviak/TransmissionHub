@@ -9,8 +9,23 @@ if should_skip_heavy_checks "$1"; then
   exit 0
 fi
 
-dotnet husky run --name dotnet-format-lib-staged-files
-dotnet husky run --name dotnet-format-bot-staged-files
-dotnet husky run --name dotnet-build-lib
-dotnet husky run --name dotnet-build-bot
-dotnet husky run --name dotnet-test
+SCOPE=$(sh .husky/scripts/check-scope.sh master)
+
+if [ "$SCOPE" = "both" ]; then
+    echo "[Husky] ❌ Error: The branch contains changes in both lib/ and bot/ simultaneously."
+    echo "[Husky] Please split your changes into separate branches or commits (as required by PR isolation rules)."
+    exit 1
+fi
+
+if [ "$SCOPE" = "lib" ]; then
+    echo "[Husky] Changes detected in lib/. Running pipeline for Client..."
+    dotnet husky run --name dotnet-format-lib-staged-files
+    dotnet husky run --name dotnet-build-lib
+    dotnet husky run --name dotnet-test-lib
+elif [ "$SCOPE" = "bot" ]; then
+    echo "[Husky] Changes detected in bot/. Running pipeline for TelegramBot..."
+    dotnet husky run --name dotnet-format-bot-staged-files
+    dotnet husky run --name dotnet-build-bot
+else
+    echo "[Husky] Changes do not affect specific projects. Skipping quality checks."
+fi
