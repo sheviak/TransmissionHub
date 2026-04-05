@@ -9,11 +9,22 @@ if should_skip_heavy_checks "$1"; then
   exit 0
 fi
 
-# Step - Formatting staged files
-dotnet husky run --name dotnet-format-staged-files
+SCOPE=$(sh .husky/scripts/check-scope.sh master)
 
-# Step - Running build
-dotnet husky run --name dotnet-build
+if [ "$SCOPE" = "both" ]; then
+    echo "[Husky] ❌ Error: The branch contains changes in both lib/ and bot/ simultaneously."
+    echo "[Husky] Please split your changes into separate branches or commits (as required by PR isolation rules)."
+    exit 1
+fi
 
-# Step - Running unit tests
-dotnet husky run --name dotnet-test
+if [ "$SCOPE" = "lib" ]; then
+    echo "[Husky] Changes detected in lib/. Running pipeline for Client..."
+    dotnet husky run --group lib
+elif [ "$SCOPE" = "bot" ]; then
+    echo "[Husky] Changes detected in bot/. Running pipeline for TelegramBot..."
+    dotnet husky run --group bot
+else
+    echo "[Husky] Changes in shared files. Running full validation (lib & bot)..."
+    dotnet husky run --group lib
+    dotnet husky run --group bot
+fi

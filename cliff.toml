@@ -1,0 +1,59 @@
+# git-cliff configuration
+# https://git-cliff.org/docs/configuration
+
+[changelog]
+header = """
+# Changelog\n
+"""
+body = """
+{%- macro remote_url() -%}
+  https://github.com/sheviak/TransmissionHub
+{%- endmacro -%}
+
+{% if version -%}
+  ## {{ version | trim_start_matches(pat="v") }} — {{ timestamp | date(format="%Y-%m-%d") }}
+{% else -%}
+  ## Unreleased
+{% endif -%}
+
+{% for group, commits in commits | group_by(attribute="group") %}
+  ### {{ group | upper_first }}
+  {% for commit in commits %}
+    - {{ commit.message | split(pat="\n") | first | upper_first | trim }}\
+      {% if commit.github.username %} — @{{ commit.github.username }}{% endif %}\
+      {% if commit.github.pr_number %} ([#{{ commit.github.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.github.pr_number }})){% endif %}\
+  {% endfor %}
+{% endfor %}
+
+**Full Changelog**: [{{ previous.version }}...{{ version }}]({{ self::remote_url() }}/compare/{{ previous.version }}...{{ version }})
+"""
+footer = ""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+split_commits = false
+commit_parsers = [
+  { message = "^feat", group = "🚀 Features" },
+  { message = "^fix", group = "🐛 Bug Fixes" },
+  { message = "^perf", group = "⚡ Performance" },
+  { message = "^refactor", group = "♻️ Refactoring" },
+  { message = "^revert", group = "⏪ Reverts" },
+  { message = "^test", group = "🧪 Tests", skip = true },
+  { message = "^docs", group = "📖 Documentation", skip = true },
+  { message = "^ci", group = "⚙️ CI", skip = true },
+  { message = "^chore", group = "🔧 Chore", skip = true },
+  { message = "^style", group = "🎨 Style", skip = true },
+  { message = "^build", group = "🏗️ Build", skip = true },
+  { message = "^wip", skip = true },
+]
+filter_commits = true
+tag_pattern = "(lib|bot)/v[0-9].*"
+
+[git.remote]
+name = "origin"
+
+[bump]
+features_always_bump_minor = true
+breaking_always_bump_major = true

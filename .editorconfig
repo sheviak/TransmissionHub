@@ -391,7 +391,7 @@ dotnet_naming_style.s_camelcase.capitalization = camel_case
 # Public API should be documented via XML comments
 dotnet_diagnostic.CS1591.severity = warning
 
-[tests/**/*.cs]
+[**/{tests,Tests}/**/*.cs]
 # Tests are allowed to keep async names without Async suffix
 dotnet_naming_rule.async_methods_must_end_with_async.severity = none
 dotnet_diagnostic.CS1591.severity = silent

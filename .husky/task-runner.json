@@ -2,34 +2,74 @@
     "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
     "tasks": [
         {
-            "name": "dotnet-format-staged-files",
+            "name": "dotnet-format-lib-staged-files",
             "command": "dotnet",
             "args": [
                 "format",
+                "lib/TransmissionHub.Client.sln",
                 "--verify-no-changes",
                 "--include",
                 "${staged}"
             ],
             "include": [
-                "**/*.cs"
-            ]
+                "lib/**/*.cs"
+            ],
+            "group": "lib"
         },
         {
-            "name": "dotnet-build",
+            "name": "dotnet-format-bot-staged-files",
+            "command": "dotnet",
+            "args": [
+                "format",
+                "bot/TransmissionHub.TelegramBot.sln",
+                "--verify-no-changes",
+                "--include",
+                "${staged}"
+            ],
+            "include": [
+                "bot/**/*.cs"
+            ],
+            "group": "bot"
+        },
+        {
+            "name": "dotnet-build-lib",
             "command": "dotnet",
             "args": [
                 "build",
+                "lib/TransmissionHub.Client.sln",
                 "--no-restore"
-            ]
+            ],
+            "include": [
+                "lib/**/*"
+            ],
+            "group": "lib"
         },
         {
-            "name": "dotnet-test",
+            "name": "dotnet-build-bot",
+            "command": "dotnet",
+            "args": [
+                "build",
+                "bot/TransmissionHub.TelegramBot.sln",
+                "--no-restore"
+            ],
+            "include": [
+                "bot/**/*"
+            ],
+            "group": "bot"
+        },
+        {
+            "name": "dotnet-test-lib",
             "command": "dotnet",
             "args": [
                 "test",
+                "lib/TransmissionHub.Client.sln",
                 "--filter",
                 "Category=Unit"
-            ]
+            ],
+            "include": [
+                "lib/**/*"
+            ],
+            "group": "lib"
         },
         {
             "name": "commit-message-linter",

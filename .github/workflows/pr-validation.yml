@@ -45,62 +45,111 @@ jobs:
 
           echo "is_wip=false" >> "$GITHUB_OUTPUT"
 
-  format:
-    name: Format Check
+  scope-check:
+    name: Scope Check
     runs-on: ubuntu-latest
     needs: wip-gate
     if: ${{ needs.wip-gate.outputs.is_wip == 'false' }}
+    outputs:
+      target_sln: ${{ steps.determine-scope.outputs.target_sln }}
+      skip_build: ${{ steps.determine-scope.outputs.skip_build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Scope
+        id: determine-scope
+        shell: bash
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          
+          SCOPE=$(sh .husky/scripts/check-scope.sh origin/${{ github.base_ref }})
+
+          if [ "$SCOPE" = "both" ]; then
+            echo "::error::PR touches both lib/ and bot/ simultaneously. Please split your changes into separate PRs."
+            exit 1
+          fi
+
+          if [ "$SCOPE" = "lib" ]; then
+            echo "target_sln=lib/TransmissionHub.Client.sln" >> "$GITHUB_OUTPUT"
+            echo "skip_build=false" >> "$GITHUB_OUTPUT"
+          elif [ "$SCOPE" = "bot" ]; then
+            echo "target_sln=bot/TransmissionHub.TelegramBot.sln" >> "$GITHUB_OUTPUT"
+            echo "skip_build=false" >> "$GITHUB_OUTPUT"
+          else
+            # If scope is 'none' (e.g. shared root files changed), build both to be safe
+            echo "target_sln=lib/TransmissionHub.Client.sln bot/TransmissionHub.TelegramBot.sln" >> "$GITHUB_OUTPUT"
+            echo "skip_build=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  format:
+    name: Format Check
+    runs-on: ubuntu-latest
+    needs: [wip-gate, scope-check]
+    if: ${{ needs.wip-gate.outputs.is_wip == 'false' && needs.scope-check.outputs.skip_build == 'false' }}
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-
       - name: Restore
-        run: dotnet restore TransmissionHub.sln
-
+        run: |
+          for sln in ${{ needs.scope-check.outputs.target_sln }}; do
+            dotnet restore "$sln"
+          done
       - name: Check formatting
-        run: dotnet format TransmissionHub.sln --verify-no-changes --no-restore
+        run: |
+          for sln in ${{ needs.scope-check.outputs.target_sln }}; do
+            dotnet format "$sln" --verify-no-changes --no-restore
+          done
 
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: wip-gate
-    if: ${{ needs.wip-gate.outputs.is_wip == 'false' }}
+    needs: [wip-gate, scope-check]
+    if: ${{ needs.wip-gate.outputs.is_wip == 'false' && needs.scope-check.outputs.skip_build == 'false' }}
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-
       - name: Restore
-        run: dotnet restore TransmissionHub.sln
-
+        run: |
+          for sln in ${{ needs.scope-check.outputs.target_sln }}; do
+            dotnet restore "$sln"
+          done
       - name: Build
-        run: dotnet build TransmissionHub.sln -c Release --no-restore
+        run: |
+          for sln in ${{ needs.scope-check.outputs.target_sln }}; do
+            dotnet build "$sln" -c Release --no-restore
+          done
 
   test:
     name: Test
     runs-on: ubuntu-latest
-    needs: wip-gate
-    if: ${{ needs.wip-gate.outputs.is_wip == 'false' }}
+    needs: [wip-gate, scope-check]
+    if: ${{ needs.wip-gate.outputs.is_wip == 'false' && needs.scope-check.outputs.skip_build == 'false' }}
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-
       - name: Restore
-        run: dotnet restore TransmissionHub.sln
-
+        run: |
+          for sln in ${{ needs.scope-check.outputs.target_sln }}; do
+            dotnet restore "$sln"
+          done
       - name: Build
-        run: dotnet build TransmissionHub.sln -c Release --no-restore
-
+        run: |
+          for sln in ${{ needs.scope-check.outputs.target_sln }}; do
+            dotnet build "$sln" -c Release --no-restore
+          done
       - name: Test
-        run: dotnet test TransmissionHub.sln -c Release --no-build --verbosity normal
+        run: |
+          for sln in ${{ needs.scope-check.outputs.target_sln }}; do
+            dotnet test "$sln" -c Release --no-build --verbosity normal
+          done
