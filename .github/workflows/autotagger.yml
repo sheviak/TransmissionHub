@@ -24,6 +24,8 @@ jobs:
 
       - name: Tag Library
         id: tag_lib
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           LATEST_TAG=$(git tag -l "lib/v*" --sort=-v:refname | head -n 1)
           if [ -z "$LATEST_TAG" ]; then LATEST_TAG="lib/v0.0.0"; fi
@@ -45,6 +47,8 @@ jobs:
 
       - name: Tag Bot
         id: tag_bot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           LATEST_TAG=$(git tag -l "bot/v*" --sort=-v:refname | head -n 1)
           if [ -z "$LATEST_TAG" ]; then LATEST_TAG="bot/v0.0.0"; fi
