@@ -20,7 +20,7 @@ jobs:
           token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Install git-cliff
-        uses: TaikiE2e/install-action@git-cliff
+        uses: taiki-e/install-action@git-cliff
 
       - name: Tag Library
         id: tag_lib
