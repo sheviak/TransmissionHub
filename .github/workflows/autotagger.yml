@@ -29,7 +29,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # 1. Get the latest STABLE tag for this project
-          LATEST_TAG=$(git tag -l "lib/v[0-9]*.[0-9]*.[0-9]*" --sort=-v:refname | head -n 1)
+          # We use git tag -l and then filter with grep -E for strict Regex matching.
+          # [0-9]+ ensures at least one digit, and $ ensures no trailing beta/rc suffixes.
+          LATEST_TAG=$(git tag -l "lib/v*" --sort=-v:refname | grep -E "^lib/v[0-9]+\.[0-9]+\.[0-9]+$" | head -n 1)
           if [ -z "$LATEST_TAG" ]; then LATEST_TAG="lib/v0.0.0"; fi
           echo "Latest stable library tag: $LATEST_TAG"
           
@@ -56,7 +58,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # 1. Get the latest STABLE tag for this project
-          LATEST_TAG=$(git tag -l "bot/v[0-9]*.[0-9]*.[0-9]*" --sort=-v:refname | head -n 1)
+          LATEST_TAG=$(git tag -l "bot/v*" --sort=-v:refname | grep -E "^bot/v[0-9]+\.[0-9]+\.[0-9]+$" | head -n 1)
           if [ -z "$LATEST_TAG" ]; then LATEST_TAG="bot/v0.0.0"; fi
           echo "Latest stable bot tag: $LATEST_TAG"
           
