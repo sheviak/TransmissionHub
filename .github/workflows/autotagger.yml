@@ -41,8 +41,8 @@ jobs:
           # so we ensure it knows we are starting from our LATEST_TAG.
           NEXT_TAG=$(git cliff "$LATEST_TAG..HEAD" --bump --include-path "lib/**" --tag-pattern "lib/v[0-9]+\.[0-9]+\.[0-9]+$" --unreleased --strip all)
           
-          # 3. Validation and Push
-          if [ -n "$NEXT_TAG" ] && [ "$NEXT_TAG" != "$LATEST_TAG" ] && [[ "$NEXT_TAG" =~ ^lib/v[0-9] ]]; then
+          # 3. Validation and Push (Strict check for X.Y.Z format)
+          if [ -n "$NEXT_TAG" ] && [ "$NEXT_TAG" != "$LATEST_TAG" ] && [[ "$NEXT_TAG" =~ ^lib/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "New library version detected: $NEXT_TAG"
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -65,7 +65,7 @@ jobs:
           # 2. Calculate next version
           NEXT_TAG=$(git cliff "$LATEST_TAG..HEAD" --bump --include-path "bot/**" --tag-pattern "bot/v[0-9]+\.[0-9]+\.[0-9]+$" --unreleased --strip all)
           
-          if [ -n "$NEXT_TAG" ] && [ "$NEXT_TAG" != "$LATEST_TAG" ] && [[ "$NEXT_TAG" =~ ^bot/v[0-9] ]]; then
+          if [ -n "$NEXT_TAG" ] && [ "$NEXT_TAG" != "$LATEST_TAG" ] && [[ "$NEXT_TAG" =~ ^bot/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "New bot version detected: $NEXT_TAG"
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
