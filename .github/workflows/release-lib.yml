@@ -22,8 +22,13 @@ jobs:
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
           VERSION=${TAG_NAME#lib/v}
+          IS_STABLE_VERSION="false"
+          if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            IS_STABLE_VERSION="true"
+          fi
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
           echo "TAG_NAME=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          echo "IS_STABLE_VERSION=$IS_STABLE_VERSION" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -36,6 +41,7 @@ jobs:
         run: dotnet nuget push out/*.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate
 
       - name: Generate Changelog
+        if: steps.prep.outputs.IS_STABLE_VERSION == 'true'
         uses: orhun/git-cliff-action@v4
         id: git-cliff
         with:
@@ -45,7 +51,7 @@ jobs:
           OUTPUT: CHANGELOG.md
 
       - name: Create Release
-        if: ${{ !contains(steps.prep.outputs.VERSION, '-') }}
+        if: steps.prep.outputs.IS_STABLE_VERSION == 'true'
         uses: softprops/action-gh-release@v2
         with:
           body: ${{ steps.git-cliff.outputs.content }}

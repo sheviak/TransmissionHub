@@ -28,22 +28,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LATEST_TAG=$(git tag -l "lib/v*" --sort=-v:refname | head -n 1)
+          # 1. Get the latest STABLE tag for this project
+          # We use git tag -l and then filter with grep -E for strict Regex matching.
+          # [0-9]+ ensures at least one digit, and $ ensures no trailing beta/rc suffixes.
+          LATEST_TAG=$(git tag -l "lib/v*" --sort=-v:refname | grep -E "^lib/v[0-9]+\.[0-9]+\.[0-9]+$" | head -n 1)
           if [ -z "$LATEST_TAG" ]; then LATEST_TAG="lib/v0.0.0"; fi
-          echo "Latest library tag: $LATEST_TAG"
+          echo "Latest stable library tag: $LATEST_TAG"
           
-          # We need to make sure NEXT_TAG includes the base version
-          NEXT_TAG=$(git cliff --bump --include-path "lib/**" --tag-pattern "lib/v[0-9]*.[0-9]*.[0-9]*" --unreleased --strip all)
+          # 2. Calculate next version. 
+          # We use --unreleased to consider commits since last tag.
+          # If no stable tags exist, git-cliff might fail prefix validation, 
+          # so we ensure it knows we are starting from our LATEST_TAG.
+          NEXT_TAG=$(git cliff "$LATEST_TAG..HEAD" --bump --include-path "lib/**" --tag-pattern "lib/v[0-9]+\.[0-9]+\.[0-9]+$" --unreleased --strip all)
           
-          # Check if NEXT_TAG matches the cleaned pattern and is not the same as LATEST_TAG
-          if [ -n "$NEXT_TAG" ] && [ "$NEXT_TAG" != "$LATEST_TAG" ] && [[ "$NEXT_TAG" =~ ^lib/v[0-9] ]]; then
+          # 3. Validation and Push (Strict check for X.Y.Z format)
+          if [ -n "$NEXT_TAG" ] && [ "$NEXT_TAG" != "$LATEST_TAG" ] && [[ "$NEXT_TAG" =~ ^lib/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "New library version detected: $NEXT_TAG"
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git tag "$NEXT_TAG"
             git push origin "$NEXT_TAG"
           else
-            echo "No changes requiring a library version bump."
+            echo "No changes requiring a library version bump (Current: $LATEST_TAG)."
           fi
 
       - name: Tag Bot
@@ -51,37 +57,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LATEST_TAG=$(git tag -l "bot/v*" --sort=-v:refname | head -n 1)
+          # 1. Get the latest STABLE tag for this project
+          LATEST_TAG=$(git tag -l "bot/v*" --sort=-v:refname | grep -E "^bot/v[0-9]+\.[0-9]+\.[0-9]+$" | head -n 1)
           if [ -z "$LATEST_TAG" ]; then LATEST_TAG="bot/v0.0.0"; fi
-          echo "Latest bot tag: $LATEST_TAG"
+          echo "Latest stable bot tag: $LATEST_TAG"
           
-          NEXT_TAG=$(git cliff --bump --include-path "bot/**" --tag-pattern "bot/v[0-9]*.[0-9]*.[0-9]*" --unreleased --strip all)
+          # 2. Calculate next version
+          NEXT_TAG=$(git cliff "$LATEST_TAG..HEAD" --bump --include-path "bot/**" --tag-pattern "bot/v[0-9]+\.[0-9]+\.[0-9]+$" --unreleased --strip all)
           
-          if [ -n "$NEXT_TAG" ] && [ "$NEXT_TAG" != "$LATEST_TAG" ] && [[ "$NEXT_TAG" =~ ^bot/v[0-9] ]]; then
+          if [ -n "$NEXT_TAG" ] && [ "$NEXT_TAG" != "$LATEST_TAG" ] && [[ "$NEXT_TAG" =~ ^bot/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "New bot version detected: $NEXT_TAG"
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git tag "$NEXT_TAG"
             git push origin "$NEXT_TAG"
           else
-            echo "No changes requiring a bot version bump."
+            echo "No changes requiring a bot version bump (Current: $LATEST_TAG)."
           fi
 
-      - name: Cleanup Beta Tags
-        if: always()
-        run: |
-          echo "Fetching all tags to identify candidates for cleanup..."
-          git fetch --tags origin
-          
-          # We only want to delete beta tags that are REACHABLE from the current master (HEAD)
-          # this ensures we don't accidentally delete beta tags from other active branches.
-          BETA_TAGS=$(git tag -l "*beta*" --merged HEAD)
-          
-          if [ -n "$BETA_TAGS" ]; then
-            for tag in $BETA_TAGS; do
-              echo "Deleting merged beta tag: $tag"
-              git push origin --delete "$tag"
-            done
-          else
-            echo "No merged beta tags to cleanup."
-          fi
+

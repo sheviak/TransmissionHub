@@ -43,13 +43,14 @@ commit_parsers = [
   { message = "^test", group = "🧪 Tests", skip = true },
   { message = "^docs", group = "📖 Documentation", skip = true },
   { message = "^ci", group = "⚙️ CI", skip = true },
+  { message = "^chore\\(deps\\)", group = "📦 Dependencies" },
   { message = "^chore", group = "🔧 Chore", skip = true },
   { message = "^style", group = "🎨 Style", skip = true },
   { message = "^build", group = "🏗️ Build", skip = true },
   { message = "^wip", skip = true },
 ]
 filter_commits = true
-tag_pattern = "(lib|bot)/v[0-9].*"
+tag_pattern = "(lib|bot)/v[0-9]+\\.[0-9]+\\.[0-9]+$"
 
 [git.remote]
 name = "origin"
