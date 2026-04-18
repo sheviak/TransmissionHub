@@ -49,7 +49,7 @@ commit_parsers = [
   { message = "^wip", skip = true },
 ]
 filter_commits = true
-tag_pattern = "(lib|bot)/v[0-9].*"
+tag_pattern = "(lib|bot)/v[0-9]+\\.[0-9]+\\.[0-9]+$"
 
 [git.remote]
 name = "origin"
