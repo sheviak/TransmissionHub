@@ -43,6 +43,7 @@ commit_parsers = [
   { message = "^test", group = "🧪 Tests", skip = true },
   { message = "^docs", group = "📖 Documentation", skip = true },
   { message = "^ci", group = "⚙️ CI", skip = true },
+  { message = "^chore\\(deps\\)", group = "📦 Dependencies" },
   { message = "^chore", group = "🔧 Chore", skip = true },
   { message = "^style", group = "🎨 Style", skip = true },
   { message = "^build", group = "🏗️ Build", skip = true },
