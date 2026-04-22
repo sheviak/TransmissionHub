@@ -32,15 +32,18 @@ jobs:
           # We use git tag -l and then filter with grep -E for strict Regex matching.
           # [0-9]+ ensures at least one digit, and $ ensures no trailing beta/rc suffixes.
           LATEST_TAG=$(git tag -l "lib/v*" --sort=-v:refname | grep -E "^lib/v[0-9]+\.[0-9]+\.[0-9]+$" | head -n 1)
-          if [ -z "$LATEST_TAG" ]; then LATEST_TAG="lib/v0.0.0"; fi
-          echo "Latest stable library tag: $LATEST_TAG"
-          
-          # 2. Calculate next version. 
-          # We use --unreleased to consider commits since last tag.
-          # If no stable tags exist, git-cliff might fail prefix validation, 
-          # so we ensure it knows we are starting from our LATEST_TAG.
-          NEXT_TAG=$(git cliff "$LATEST_TAG..HEAD" --bump --include-path "lib/**" --tag-pattern "lib/v[0-9]+\.[0-9]+\.[0-9]+$" --unreleased --strip all)
-          
+          echo "Latest stable library tag: ${LATEST_TAG:-<none>}"
+
+          # 2. Calculate next version.
+          # --bumped-version prints ONLY the next tag name to stdout (e.g. "lib/v0.1.0").
+          # Do NOT use (--bump + --strip all): --strip all strips the changelog body,
+          # not the version string — so it outputs changelog text, not a tag name.
+          if [ -z "$LATEST_TAG" ]; then
+            NEXT_TAG=$(git cliff --bumped-version --include-path "lib/**" --tag-pattern "lib/v[0-9]+\.[0-9]+\.[0-9]+$")
+          else
+            NEXT_TAG=$(git cliff "$LATEST_TAG..HEAD" --bumped-version --include-path "lib/**" --tag-pattern "lib/v[0-9]+\.[0-9]+\.[0-9]+$")
+          fi
+
           # 3. Validation and Push (Strict check for X.Y.Z format)
           if [ -n "$NEXT_TAG" ] && [ "$NEXT_TAG" != "$LATEST_TAG" ] && [[ "$NEXT_TAG" =~ ^lib/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "New library version detected: $NEXT_TAG"
@@ -49,7 +52,7 @@ jobs:
             git tag "$NEXT_TAG"
             git push origin "$NEXT_TAG"
           else
-            echo "No changes requiring a library version bump (Current: $LATEST_TAG)."
+            echo "No changes requiring a library version bump (Current: ${LATEST_TAG:-<none>})."
           fi
 
       - name: Tag Bot
@@ -59,12 +62,16 @@ jobs:
         run: |
           # 1. Get the latest STABLE tag for this project
           LATEST_TAG=$(git tag -l "bot/v*" --sort=-v:refname | grep -E "^bot/v[0-9]+\.[0-9]+\.[0-9]+$" | head -n 1)
-          if [ -z "$LATEST_TAG" ]; then LATEST_TAG="bot/v0.0.0"; fi
-          echo "Latest stable bot tag: $LATEST_TAG"
-          
-          # 2. Calculate next version
-          NEXT_TAG=$(git cliff "$LATEST_TAG..HEAD" --bump --include-path "bot/**" --tag-pattern "bot/v[0-9]+\.[0-9]+\.[0-9]+$" --unreleased --strip all)
-          
+          echo "Latest stable bot tag: ${LATEST_TAG:-<none>}"
+
+          # 2. Calculate next version.
+          # --bumped-version prints ONLY the next tag name to stdout (e.g. "bot/v0.1.0").
+          if [ -z "$LATEST_TAG" ]; then
+            NEXT_TAG=$(git cliff --bumped-version --include-path "bot/**" --tag-pattern "bot/v[0-9]+\.[0-9]+\.[0-9]+$")
+          else
+            NEXT_TAG=$(git cliff "$LATEST_TAG..HEAD" --bumped-version --include-path "bot/**" --tag-pattern "bot/v[0-9]+\.[0-9]+\.[0-9]+$")
+          fi
+
           if [ -n "$NEXT_TAG" ] && [ "$NEXT_TAG" != "$LATEST_TAG" ] && [[ "$NEXT_TAG" =~ ^bot/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "New bot version detected: $NEXT_TAG"
             git config user.name "github-actions[bot]"
@@ -72,7 +79,7 @@ jobs:
             git tag "$NEXT_TAG"
             git push origin "$NEXT_TAG"
           else
-            echo "No changes requiring a bot version bump (Current: $LATEST_TAG)."
+            echo "No changes requiring a bot version bump (Current: ${LATEST_TAG:-<none>})."
           fi
 
 
