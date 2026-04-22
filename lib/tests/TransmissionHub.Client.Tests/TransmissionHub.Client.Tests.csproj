@@ -8,4 +8,7 @@
     <ItemGroup>
         <PackageReference Include="TUnit"/>
     </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\TransmissionHub.Client\TransmissionHub.Client.csproj" />
+    </ItemGroup>
 </Project>

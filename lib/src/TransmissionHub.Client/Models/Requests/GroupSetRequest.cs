@@ -1,0 +1,40 @@
+namespace TransmissionHub.Client.Models.Requests;
+
+/// <summary>
+/// Request to configure a bandwidth group.
+/// </summary>
+/// <remarks>
+/// Added in RPC version 17.
+/// </remarks>
+public record GroupSetRequest
+{
+    /// <summary>
+    /// True if session upload limits are honored.
+    /// </summary>
+    public bool? HonorsSessionLimits { get; init; }
+
+    /// <summary>
+    /// Bandwidth group name.
+    /// </summary>
+    public string? Name { get; init; }
+
+    /// <summary>
+    /// Max global download speed (KBps).
+    /// </summary>
+    public int? SpeedLimitDown { get; init; }
+
+    /// <summary>
+    /// True means enabled.
+    /// </summary>
+    public bool? SpeedLimitDownEnabled { get; init; }
+
+    /// <summary>
+    /// Max global upload speed (KBps).
+    /// </summary>
+    public int? SpeedLimitUp { get; init; }
+
+    /// <summary>
+    /// True means enabled.
+    /// </summary>
+    public bool? SpeedLimitUpEnabled { get; init; }
+}
