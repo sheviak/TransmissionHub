@@ -21,4 +21,7 @@
         <None Include="..\..\..\assets\icon.png" Pack="true" PackagePath="\" />
         <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
+    <ItemGroup>
+        <InternalsVisibleTo Include="TransmissionHub.Client.Tests" />
+    </ItemGroup>
 </Project>
