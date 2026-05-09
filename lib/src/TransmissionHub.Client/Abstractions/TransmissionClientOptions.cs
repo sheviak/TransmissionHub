@@ -5,7 +5,7 @@ namespace TransmissionHub.Client.Abstractions;
 /// <summary>
 /// Configures Transmission client integration settings.
 /// </summary>
-public sealed class TransmissionHubOptions : IValidatableObject
+public sealed class TransmissionClientOptions : IValidatableObject
 {
     /// <summary>
     /// Gets or sets the Transmission RPC endpoint URL.
