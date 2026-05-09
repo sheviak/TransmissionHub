@@ -20,6 +20,7 @@ internal sealed class RpcRequest
     /// Gets the method arguments object.
     /// </summary>
     [JsonPropertyName("arguments")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public object? Arguments { get; init; }
 
     /// <summary>
