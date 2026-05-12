@@ -80,7 +80,7 @@ internal sealed class JsonRpcDialect : IRpcDialect
     {
         try
         {
-            var result = JsonSerializer.Deserialize<T>(payload.GetRawText(), Options);
+            var result = payload.Deserialize<T>(Options);
 
             if (result is null)
             {

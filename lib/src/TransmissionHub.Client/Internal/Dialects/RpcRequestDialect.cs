@@ -91,12 +91,11 @@ internal sealed class RpcRequestDialect : IRpcDialect
     {
         try
         {
-            // Normalize all keys (camelCase, kebab-case, underscore anomalies) to snake_case,
-            // then reuse the same SnakeCaseLower options as JsonRpcDialect.
-            var normalizedJson = RpcPayloadKeyNormalizer.NormalizeObjectKeysToSnakeCase(
-                payload.GetRawText());
+            // Normalize all keys (camelCase, kebab-case, underscore anomalies) to snake_case.
+            // NormalizeJsonToBytes accepts JsonElement directly — no GetRawText() or reparsing.
+            var normalizedBytes = RpcPayloadKeyNormalizer.NormalizeJsonToBytes(payload);
 
-            var result = JsonSerializer.Deserialize<T>(normalizedJson, RpcDialectSerializerOptions.SnakeCaseLower);
+            var result = JsonSerializer.Deserialize<T>(normalizedBytes, RpcDialectSerializerOptions.SnakeCaseLower);
 
             if (result is null)
             {
