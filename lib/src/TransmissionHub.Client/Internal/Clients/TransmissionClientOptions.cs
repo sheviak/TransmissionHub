@@ -1,12 +1,17 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TransmissionHub.Client.Abstractions;
+namespace TransmissionHub.Client.Internal.Clients;
 
 /// <summary>
 /// Configures Transmission client integration settings.
 /// </summary>
-public sealed class TransmissionClientOptions : IValidatableObject
+internal sealed class TransmissionClientOptions : IValidatableObject
 {
+    /// <summary>
+    /// List of supported Transmission RPC versions.
+    /// </summary>
+    private static readonly int[] SupportedVersions = [16, 17, 18];
+
     /// <summary>
     /// Gets or sets the Transmission RPC endpoint URL.
     /// </summary>
@@ -41,7 +46,6 @@ public sealed class TransmissionClientOptions : IValidatableObject
     /// Gets or sets the target Transmission RPC version.
     /// </summary>
     [Required]
-    [Range(16, 18)]
     public int RpcVersion { get; init; }
 
     /// <summary>
@@ -59,6 +63,22 @@ public sealed class TransmissionClientOptions : IValidatableObject
     [Range(1, 5)]
     public int MaxSessionRetries { get; init; } = 1;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether to log RPC requests.
+    /// </summary>
+    /// <remarks>
+    /// The default value is <c>False</c>.
+    /// </remarks>
+    public bool LogRequests { get; init; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to log RPC responses.
+    /// </summary>
+    /// <remarks>
+    /// The default value is <c>False</c>.
+    /// </remarks>
+    public bool LogResponses { get; init; }
+
     /// <inheritdoc />
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
@@ -69,10 +89,10 @@ public sealed class TransmissionClientOptions : IValidatableObject
                 [nameof(Url)]);
         }
 
-        if (RpcVersion is not (16 or 17 or 18))
+        if (!SupportedVersions.Contains(RpcVersion))
         {
             yield return new ValidationResult(
-                "Transmission RPC version must be one of: 16, 17 or 18.",
+                $"Transmission RPC version must be one of: {string.Join(", ", SupportedVersions)}.",
                 [nameof(RpcVersion)]);
         }
 

@@ -22,19 +22,16 @@ internal sealed class JsonRpcResponse
     /// <summary>
     /// Gets the result object, present on success.
     /// </summary>
-    [JsonPropertyName("result")]
     public JsonElement? Result { get; init; }
 
     /// <summary>
     /// Gets the error object, present on failure.
     /// </summary>
-    [JsonPropertyName("error")]
     public JsonRpcError? Error { get; init; }
 
     /// <summary>
     /// Gets the request identifier echoed from the request.
     /// </summary>
-    [JsonPropertyName("id")]
     public int? Id { get; init; }
 
     /// <summary>
@@ -52,12 +49,10 @@ internal sealed class JsonRpcError
     /// <summary>
     /// Gets the numeric error code.
     /// </summary>
-    [JsonPropertyName("code")]
     public int Code { get; init; }
 
     /// <summary>
     /// Gets the human-readable error message.
     /// </summary>
-    [JsonPropertyName("message")]
     public required string Message { get; init; }
 }

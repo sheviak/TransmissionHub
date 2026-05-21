@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using TransmissionHub.Client.Abstractions;
 using TransmissionHub.Client.Internal.Protocols;
 
@@ -31,18 +32,28 @@ internal sealed class RpcRequestDialect : IRpcDialect
     private static readonly JsonSerializerOptions Options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
     /// <inheritdoc />
-    public string SerializeRequest(RpcMethod method, object? arguments)
+    public Result<string> SerializeRequest(RpcMethod method, object? arguments)
     {
-        var envelope = new RpcRequest
+        try
         {
-            Method = ToWireMethodName(method),
-            Arguments = arguments,
-        };
+            var envelope = new RpcRequest
+            {
+                Method = ConvertToWireMethodName(method),
+                Arguments = arguments,
+            };
 
-        return JsonSerializer.Serialize(envelope, Options);
+            var request = JsonSerializer.Serialize(envelope, Options);
+
+            return Result.Ok(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result.Fail<string>($"Failed to serialize legacy RPC request: {ex.Message}");
+        }
     }
 
     /// <inheritdoc />
@@ -65,12 +76,16 @@ internal sealed class RpcRequestDialect : IRpcDialect
 
         try
         {
-            response = JsonSerializer.Deserialize<RpcResponse>(rawJson)
+            response = JsonSerializer.Deserialize<RpcResponse>(rawJson, Options)
                        ?? throw new JsonException("Response deserialized to null.");
         }
         catch (JsonException ex)
         {
             return Result.Fail<JsonElement>($"Failed to parse legacy RPC response: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return Result.Fail<JsonElement>($"Unhandled exception while parse JSON-RPC response: {ex.Message}");
         }
 
         if (!response.IsSuccess)
@@ -110,10 +125,8 @@ internal sealed class RpcRequestDialect : IRpcDialect
         }
     }
 
-    /// <summary>
-    /// Converts a <see cref="RpcMethod"/> to the legacy kebab-case wire method name.
-    /// </summary>
-    private static string ToWireMethodName(RpcMethod method) => method switch
+    /// <inheritdoc />
+    public string ConvertToWireMethodName(RpcMethod method) => method switch
     {
         RpcMethod.TorrentStart => "torrent-start",
         RpcMethod.TorrentStartNow => "torrent-start-now",

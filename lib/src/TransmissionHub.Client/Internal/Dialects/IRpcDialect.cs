@@ -31,8 +31,11 @@ internal interface IRpcDialect
     /// <param name="arguments">
     /// The request arguments object, or <see langword="null"/> for methods with no parameters.
     /// </param>
-    /// <returns>A JSON string ready to be sent as an HTTP request body.</returns>
-    public string SerializeRequest(RpcMethod method, object? arguments);
+    /// <returns>
+    /// <see cref="Result{T}"/> containing the JSON string ready to be sent as an HTTP request body,
+    /// or an <see cref="Error"/> if serialization fails.
+    /// </returns>
+    public Result<string> SerializeRequest(RpcMethod method, object? arguments);
 
     /// <summary>
     /// Normalizes a list of field names from PascalCase to the wire format of this dialect.
@@ -74,4 +77,16 @@ internal interface IRpcDialect
     /// or an <see cref="Error"/> if deserialization fails.
     /// </returns>
     public Result<T> Deserialize<T>(JsonElement payload);
+
+    /// <summary>
+    /// Converts an <see cref="RpcMethod"/> enum value to its wire-format string representation.
+    /// </summary>
+    /// <remarks>
+    /// Each dialect has its own naming convention for methods.
+    /// For example, the legacy dialect uses kebab-case (<c>torrent-get</c>),
+    /// while the JSON-RPC 2.0 dialect uses snake_case (<c>torrent_get</c>).
+    /// </remarks>
+    /// <param name="method">The RPC method to convert.</param>
+    /// <returns>The method name as a string, formatted for the specific RPC dialect.</returns>
+    public string ConvertToWireMethodName(RpcMethod method);
 }

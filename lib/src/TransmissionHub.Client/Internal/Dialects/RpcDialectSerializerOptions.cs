@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace TransmissionHub.Client.Internal.Dialects;
 
@@ -18,6 +19,7 @@ internal static class RpcDialectSerializerOptions
     /// </summary>
     public static readonly JsonSerializerOptions SnakeCaseLower = new()
     {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         PropertyNameCaseInsensitive = true,
     };
