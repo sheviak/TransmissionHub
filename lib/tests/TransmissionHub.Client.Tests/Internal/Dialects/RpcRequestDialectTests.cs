@@ -16,10 +16,15 @@ public class RpcRequestDialectTests
     [Test]
     public async Task SerializeRequest_ProducesLegacyEnvelope()
     {
-        // Verify the legacy envelope format: { "method": "...", "arguments": ... }
-        var json = _dialect.SerializeRequest(RpcMethod.TorrentGet, new { ids = new[] { 1, 2 } });
-        using var doc = JsonDocument.Parse(json);
+        // Arrange
+        var requestArgs = new { ids = new[] { 1, 2 } };
 
+        // Act
+        var json = _dialect.SerializeRequest(RpcMethod.TorrentGet, requestArgs);
+        using var doc = JsonDocument.Parse(json.Value);
+
+        // Assert
+        // Verify the legacy envelope format: { "method": "...", "arguments": ... }
         await Assert.That(doc.RootElement.TryGetProperty("method", out _)).IsTrue();
         await Assert.That(doc.RootElement.TryGetProperty("arguments", out _)).IsTrue();
         // Must NOT contain JSON-RPC 2.0 fields
@@ -30,18 +35,22 @@ public class RpcRequestDialectTests
     [Test]
     public async Task SerializeRequest_MethodName_IsKebabCase()
     {
+        // Act
         var json = _dialect.SerializeRequest(RpcMethod.TorrentGet, null);
-        using var doc = JsonDocument.Parse(json);
+        using var doc = JsonDocument.Parse(json.Value);
 
+        // Assert
         await Assert.That(doc.RootElement.GetProperty("method").GetString()).IsEqualTo("torrent-get");
     }
 
     [Test]
     public async Task SerializeRequest_NullArguments_OmitsArgumentsKey()
     {
+        // Act
         var json = _dialect.SerializeRequest(RpcMethod.SessionStats, null);
-        using var doc = JsonDocument.Parse(json);
+        using var doc = JsonDocument.Parse(json.Value);
 
+        // Assert
         await Assert.That(doc.RootElement.TryGetProperty("arguments", out _)).IsFalse();
     }
 
@@ -52,6 +61,7 @@ public class RpcRequestDialectTests
     [Test]
     public async Task SerializeRequest_TorrentGet_FieldsArrayContainsLegacyWireNames()
     {
+        // Arrange
         // NormalizeFields converts PascalCase → legacy wire names (kebab or camelCase).
         // The caller is responsible for normalizing fields before passing them to the request.
         var wireFields = _dialect.NormalizeFields([
@@ -69,8 +79,9 @@ public class RpcRequestDialectTests
             Fields = wireFields,
         };
 
+        // Act
         var json = _dialect.SerializeRequest(RpcMethod.TorrentGet, request);
-        using var doc = JsonDocument.Parse(json);
+        using var doc = JsonDocument.Parse(json.Value);
         var fields = doc.RootElement
             .GetProperty("arguments")
             .GetProperty("fields")
@@ -78,6 +89,7 @@ public class RpcRequestDialectTests
             .Select(e => e.GetString()!)
             .ToList();
 
+        // Assert
         await Assert.That(fields).Contains("id");
         await Assert.That(fields).Contains("name");
         await Assert.That(fields).Contains("file-count");       // kebab override
@@ -93,9 +105,14 @@ public class RpcRequestDialectTests
     [Test]
     public async Task NormalizeFields_MixOfCamelAndKebabFields_NormalizesCorrectly()
     {
+        // Arrange
         // file-count and peer-limit are the most important kebab exceptions in torrent-get
-        var result = _dialect.NormalizeFields(["Name", "FileCount", "PeerLimit", "HashString"]);
+        var fields = new[] { "Name", "FileCount", "PeerLimit", "HashString" };
 
+        // Act
+        var result = _dialect.NormalizeFields(fields);
+
+        // Assert
         await Assert.That(result[0]).IsEqualTo("name");           // camelCase fallback
         await Assert.That(result[1]).IsEqualTo("file-count");     // kebab override
         await Assert.That(result[2]).IsEqualTo("peer-limit");     // kebab override
@@ -109,10 +126,13 @@ public class RpcRequestDialectTests
     [Test]
     public async Task ExtractPayload_SuccessResponse_ReturnsArgumentsPayload()
     {
+        // Arrange
         const string rawJson = """{"result":"success","arguments":{"path":"/downloads","size-bytes":1024}}""";
 
+        // Act
         var result = _dialect.ExtractPayload(rawJson);
 
+        // Assert
         await Assert.That(result.IsSuccess).IsTrue();
         await Assert.That(result.Value.TryGetProperty("size-bytes", out _)).IsTrue();
     }
@@ -120,10 +140,13 @@ public class RpcRequestDialectTests
     [Test]
     public async Task ExtractPayload_ErrorResponse_ReturnsFailureWithMessage()
     {
+        // Arrange
         const string rawJson = """{"result":"no such torrent","arguments":{}}""";
 
+        // Act
         var result = _dialect.ExtractPayload(rawJson);
 
+        // Assert
         await Assert.That(result.IsFailure).IsTrue();
         await Assert.That(result.Error!.Value.Message).IsEqualTo("no such torrent");
     }
@@ -135,13 +158,16 @@ public class RpcRequestDialectTests
     [Test]
     public async Task Deserialize_MixedLegacyKeys_MapsToRecord()
     {
+        // Arrange
         // Realistic free-space response with mixed key styles:
         // "size-bytes" (kebab), "total_size" (underscore anomaly), "path" (plain)
         const string payloadJson = """{"size-bytes":5000000,"total_size":10000000,"path":"/downloads"}""";
         var payload = JsonDocument.Parse(payloadJson).RootElement;
 
+        // Act
         var result = _dialect.Deserialize<FreeSpaceTestModel>(payload);
 
+        // Assert
         await Assert.That(result.IsSuccess).IsTrue();
         await Assert.That(result.Value.SizeBytes).IsEqualTo(5_000_000L);
         await Assert.That(result.Value.TotalSize).IsEqualTo(10_000_000L);
@@ -151,6 +177,7 @@ public class RpcRequestDialectTests
     [Test]
     public async Task Deserialize_SessionStatsWithKebabNestedKeys_MapsNestedObjects()
     {
+        // Arrange
         // "cumulative-stats" and "current-stats" are kebab-case top-level keys in session-stats
         const string payloadJson = """
         {
@@ -161,8 +188,10 @@ public class RpcRequestDialectTests
         """;
         var payload = JsonDocument.Parse(payloadJson).RootElement;
 
+        // Act
         var result = _dialect.Deserialize<SessionStatsTestModel>(payload);
 
+        // Assert
         await Assert.That(result.IsSuccess).IsTrue();
         await Assert.That(result.Value.ActiveTorrentCount).IsEqualTo(2);
         await Assert.That(result.Value.CumulativeStats).IsNotNull();

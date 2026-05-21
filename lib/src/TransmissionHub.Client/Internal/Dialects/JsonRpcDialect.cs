@@ -22,15 +22,24 @@ internal sealed class JsonRpcDialect : IRpcDialect
     private static readonly JsonSerializerOptions Options = RpcDialectSerializerOptions.SnakeCaseLower;
 
     /// <inheritdoc />
-    public string SerializeRequest(RpcMethod method, object? arguments)
+    public Result<string> SerializeRequest(RpcMethod method, object? arguments)
     {
-        var envelope = new JsonRpcRequest
+        try
         {
-            Method = ToWireMethodName(method),
-            Params = arguments,
-        };
+            var envelope = new JsonRpcRequest
+            {
+                Method = ConvertToWireMethodName(method),
+                Params = arguments,
+            };
 
-        return JsonSerializer.Serialize(envelope, Options);
+            var request = JsonSerializer.Serialize(envelope, Options);
+
+            return Result.Ok(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result.Fail<string>($"Failed to serialize JSON-RPC request: {ex.Message}");
+        }
     }
 
     /// <inheritdoc />
@@ -59,6 +68,10 @@ internal sealed class JsonRpcDialect : IRpcDialect
         catch (JsonException ex)
         {
             return Result.Fail<JsonElement>($"Failed to parse JSON-RPC response: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return Result.Fail<JsonElement>($"Unhandled exception while parse JSON-RPC response: {ex.Message}");
         }
 
         if (!response.IsSuccess)
@@ -95,10 +108,8 @@ internal sealed class JsonRpcDialect : IRpcDialect
         }
     }
 
-    /// <summary>
-    /// Converts a <see cref="RpcMethod"/> to the JSON-RPC 2.0 snake_case wire method name.
-    /// </summary>
-    private static string ToWireMethodName(RpcMethod method) => method switch
+    /// <inheritdoc />
+    public string ConvertToWireMethodName(RpcMethod method) => method switch
     {
         RpcMethod.TorrentStart => "torrent_start",
         RpcMethod.TorrentStartNow => "torrent_start_now",

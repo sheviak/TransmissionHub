@@ -16,10 +16,15 @@ public class JsonRpcDialectTests
     [Test]
     public async Task SerializeRequest_ProducesJsonRpc20Envelope()
     {
-        // Verify the JSON-RPC 2.0 envelope format: { "jsonrpc": "2.0", "method": "...", "params": ... }
-        var json = _dialect.SerializeRequest(RpcMethod.TorrentGet, new { ids = new[] { 1 } });
-        using var doc = JsonDocument.Parse(json);
+        // Arrange
+        var requestArgs = new { ids = new[] { 1 } };
 
+        // Act
+        var json = _dialect.SerializeRequest(RpcMethod.TorrentGet, requestArgs);
+        using var doc = JsonDocument.Parse(json.Value);
+
+        // Assert
+        // Verify the JSON-RPC 2.0 envelope format: { "jsonrpc": "2.0", "method": "...", "params": ... }
         await Assert.That(doc.RootElement.GetProperty("jsonrpc").GetString()).IsEqualTo("2.0");
         await Assert.That(doc.RootElement.TryGetProperty("method", out _)).IsTrue();
         await Assert.That(doc.RootElement.TryGetProperty("params", out _)).IsTrue();
@@ -30,18 +35,22 @@ public class JsonRpcDialectTests
     [Test]
     public async Task SerializeRequest_MethodName_IsSnakeCase()
     {
+        // Act
         var json = _dialect.SerializeRequest(RpcMethod.TorrentGet, null);
-        using var doc = JsonDocument.Parse(json);
+        using var doc = JsonDocument.Parse(json.Value);
 
+        // Assert
         await Assert.That(doc.RootElement.GetProperty("method").GetString()).IsEqualTo("torrent_get");
     }
 
     [Test]
     public async Task SerializeRequest_NullArguments_OmitsParamsKey()
     {
+        // Act
         var json = _dialect.SerializeRequest(RpcMethod.SessionStats, null);
-        using var doc = JsonDocument.Parse(json);
+        using var doc = JsonDocument.Parse(json.Value);
 
+        // Assert
         await Assert.That(doc.RootElement.TryGetProperty("params", out _)).IsFalse();
     }
 
@@ -52,18 +61,22 @@ public class JsonRpcDialectTests
     [Test]
     public async Task SerializeRequest_FreeSpaceRequest_ParamsUseSnakeCase()
     {
+        // Arrange
         var request = new FreeSpaceRequest { Path = "/downloads" };
 
+        // Act
         var json = _dialect.SerializeRequest(RpcMethod.FreeSpace, request);
-        using var doc = JsonDocument.Parse(json);
+        using var doc = JsonDocument.Parse(json.Value);
         var @params = doc.RootElement.GetProperty("params");
 
+        // Assert
         await Assert.That(@params.GetProperty("path").GetString()).IsEqualTo("/downloads");
     }
 
     [Test]
     public async Task SerializeRequest_TorrentGet_FieldsArrayContainsSnakeCaseWireNames()
     {
+        // Arrange
         // In JSON-RPC 2.0 dialect, ALL fields use snake_case — no exceptions.
         var wireFields = _dialect.NormalizeFields([
             TorrentGetRequest.TorrentFields.Id,          // "Id"         → "id"
@@ -79,8 +92,9 @@ public class JsonRpcDialectTests
             Fields = wireFields,
         };
 
+        // Act
         var json = _dialect.SerializeRequest(RpcMethod.TorrentGet, request);
-        using var doc = JsonDocument.Parse(json);
+        using var doc = JsonDocument.Parse(json.Value);
         var fields = doc.RootElement
             .GetProperty("params")
             .GetProperty("fields")
@@ -88,6 +102,7 @@ public class JsonRpcDialectTests
             .Select(e => e.GetString()!)
             .ToList();
 
+        // Assert
         await Assert.That(fields).Contains("id");
         await Assert.That(fields).Contains("name");
         await Assert.That(fields).Contains("file_count");    // snake_case (NOT file-count)
@@ -102,9 +117,14 @@ public class JsonRpcDialectTests
     [Test]
     public async Task NormalizeFields_AnyField_ProducesSnakeCase()
     {
+        // Arrange
         // Unlike legacy dialect, all fields use the same policy — no exceptions
-        var result = _dialect.NormalizeFields(["FileCount", "PeerLimit", "ActivityDate", "HashString"]);
+        var fields = new[] { "FileCount", "PeerLimit", "ActivityDate", "HashString" };
 
+        // Act
+        var result = _dialect.NormalizeFields(fields);
+
+        // Assert
         await Assert.That(result[0]).IsEqualTo("file_count");
         await Assert.That(result[1]).IsEqualTo("peer_limit");
         await Assert.That(result[2]).IsEqualTo("activity_date");
@@ -118,10 +138,13 @@ public class JsonRpcDialectTests
     [Test]
     public async Task ExtractPayload_SuccessResponse_ReturnsResultPayload()
     {
+        // Arrange
         const string rawJson = """{"jsonrpc":"2.0","result":{"path":"/downloads","size_bytes":1024},"id":1}""";
 
+        // Act
         var result = _dialect.ExtractPayload(rawJson);
 
+        // Assert
         await Assert.That(result.IsSuccess).IsTrue();
         await Assert.That(result.Value.TryGetProperty("size_bytes", out _)).IsTrue();
     }
@@ -129,10 +152,13 @@ public class JsonRpcDialectTests
     [Test]
     public async Task ExtractPayload_ErrorResponse_ReturnsFailureWithCodeAndMessage()
     {
+        // Arrange
         const string rawJson = """{"jsonrpc":"2.0","error":{"code":-32600,"message":"Invalid request"},"id":1}""";
 
+        // Act
         var result = _dialect.ExtractPayload(rawJson);
 
+        // Assert
         await Assert.That(result.IsFailure).IsTrue();
         await Assert.That(result.Error!.Value.Message).IsEqualTo("Invalid request");
         await Assert.That(result.Error!.Value.Code).IsEqualTo(-32600);
@@ -145,11 +171,14 @@ public class JsonRpcDialectTests
     [Test]
     public async Task Deserialize_SnakeCasePayload_MapsToRecord()
     {
+        // Arrange
         const string payloadJson = """{"size_bytes":5000000,"total_size":10000000,"path":"/downloads"}""";
         var payload = JsonDocument.Parse(payloadJson).RootElement;
 
+        // Act
         var result = _dialect.Deserialize<FreeSpaceSnakeModel>(payload);
 
+        // Assert
         await Assert.That(result.IsSuccess).IsTrue();
         await Assert.That(result.Value.SizeBytes).IsEqualTo(5_000_000L);
         await Assert.That(result.Value.TotalSize).IsEqualTo(10_000_000L);
@@ -159,6 +188,7 @@ public class JsonRpcDialectTests
     [Test]
     public async Task Deserialize_NestedSnakeCasePayload_MapsRecursively()
     {
+        // Arrange
         const string payloadJson = """
         {
           "active_torrent_count": 5,
@@ -168,8 +198,10 @@ public class JsonRpcDialectTests
         """;
         var payload = JsonDocument.Parse(payloadJson).RootElement;
 
+        // Act
         var result = _dialect.Deserialize<SessionStatsSnakeModel>(payload);
 
+        // Assert
         await Assert.That(result.IsSuccess).IsTrue();
         await Assert.That(result.Value.ActiveTorrentCount).IsEqualTo(5);
         await Assert.That(result.Value.CumulativeStats!.UploadedBytes).IsEqualTo(1000);
