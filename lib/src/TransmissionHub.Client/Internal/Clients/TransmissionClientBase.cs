@@ -175,6 +175,7 @@ internal abstract class TransmissionClientBase : ITransmissionClient
     {
         try
         {
+            var wireMethodName = _rpcDialect.ConvertToWireMethodName(method);
             var serializeResult = _rpcDialect.SerializeRequest(method, arguments);
 
             if (serializeResult.IsFailure)
@@ -187,7 +188,7 @@ internal abstract class TransmissionClientBase : ITransmissionClient
 
             if (_options.LogRequests)
             {
-                _logger.LogRequest(method, jsonRequest);
+                _logger.LogRequest(wireMethodName, jsonRequest);
             }
 
             var content = new StringContent(jsonRequest, Encoding.UTF8, MediaTypeNames.Application.Json);
@@ -207,14 +208,14 @@ internal abstract class TransmissionClientBase : ITransmissionClient
 
             if (_options.LogResponses)
             {
-                _logger.LogResponse(method, jsonResponse);
+                _logger.LogResponse(wireMethodName, jsonResponse);
             }
 
             var payloadResult = _rpcDialect.ExtractPayload(jsonResponse);
 
             if (payloadResult.IsFailure)
             {
-                _logger.LogRpcError(method, payloadResult.Error!.Value.Message);
+                _logger.LogRpcError(wireMethodName, payloadResult.Error!.Value.Message);
                 return Result.Fail<JsonElement>(payloadResult.Error!.Value);
             }
 

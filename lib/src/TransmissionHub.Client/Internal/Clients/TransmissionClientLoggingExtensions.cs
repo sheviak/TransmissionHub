@@ -13,14 +13,14 @@ internal static partial class TransmissionClientLoggingExtensions
     /// <summary>
     /// Logs an RPC request.
     /// </summary>
-    [LoggerMessage(LogLevel.Debug, "RPC Request ({Method}): {JsonRequest}")]
-    internal static partial void LogRequest(this ILogger logger, RpcMethod method, string jsonRequest);
+    [LoggerMessage(LogLevel.Information, "RPC Request ({Method}): {JsonRequest}")]
+    internal static partial void LogRequest(this ILogger logger, string method, string jsonRequest);
 
     /// <summary>
     /// Logs an RPC response.
     /// </summary>
-    [LoggerMessage(LogLevel.Debug, "RPC Response ({Method}): {JsonResponse}")]
-    internal static partial void LogResponse(this ILogger logger, RpcMethod method, string jsonResponse);
+    [LoggerMessage(LogLevel.Information, "RPC Response ({Method}): {JsonResponse}")]
+    internal static partial void LogResponse(this ILogger logger, string method, string jsonResponse);
 
     /// <summary>
     /// Logs an HTTP request failure.
@@ -32,7 +32,7 @@ internal static partial class TransmissionClientLoggingExtensions
     /// Logs an RPC call failure.
     /// </summary>
     [LoggerMessage(LogLevel.Error, "RPC call {Method} failed: {RpcResult}")]
-    internal static partial void LogRpcError(this ILogger logger, RpcMethod method, string rpcResult);
+    internal static partial void LogRpcError(this ILogger logger, string method, string rpcResult);
 
     /// <summary>
     /// Logs a serialization error.
