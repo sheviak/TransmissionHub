@@ -1,35 +1,58 @@
-# TransmissionHub.Client
+# 📦 TransmissionHub.Client
 
-Transmission RPC client library for RPC versions 16, 17, and 18.
+A modern .NET library for the Transmission RPC API.
 
-## Documentation
+---
 
-The purpose of this README file is to provide a quick overview of some of the library's features, including everything you need to get started making calls to the Transmission API.
+## 📋 Table of Contents
+- [What is this library?](#what-is-this-library)
+- [What problems does it solve?](#what-problems-does-it-solve)
+- [What is its main highlight?](#what-is-its-main-highlight)
+- [Documentation](#documentation)
+- [Quick start](#quick-start)
+- [Example](#example)
+
+---
+
+## 🤔 What is this library?
+
+**TransmissionHub.Client** is a modern .NET library designed for interacting with the Transmission torrent client's RPC API. It provides a convenient, strongly-typed, and resilient way to manage your Transmission server from any .NET application.
+
+## 🎯 What problems does it solve?
+
+This library abstracts the complexities of direct communication with the Transmission RPC, solving the following problems:
+
+- **Protocol complexity:** No more manual JSON construction. The library provides ready-to-use C# models for all operations.
+- **Session management:** Automatically handles the `X-Transmission-Session-Id`, including transparent retries on 409 Conflict errors.
+- **Safe logging:** Built-in mechanisms automatically redact sensitive data (login, password, host) from logs.
+- **Resilience:** Utilizes `Microsoft.Extensions.Http.Resilience` for connection stability and automatic retries.
+- **Easy integration:** Seamlessly integrates with `Microsoft.Extensions.DependencyInjection` and configuration binding.
+
+## 🌟 What is its main highlight?
+
+The key feature of **TransmissionHub.Client** is its **transparent adaptation to different RPC protocol versions (16, 17, and 18)**.
+
+Different Transmission versions use different JSON field naming conventions (`kebab-case` vs. `snake_case`). This library **automatically maps** field names based on your configuration. You write your code once, and it works across different Transmission server versions.
+
+## 📚 Documentation
+
+This README provides a quick overview. For complete details, refer to the official specifications.
 
 [Official Transmission RPC specs](https://github.com/transmission/transmission/blob/4.1.0/docs/rpc-spec.md)
 
-## Implemented Features
+## 🚀 Quick start
 
-- Stateless `ITransmissionClient` implementation with Result pattern for all public operations.
-- Field and method notation mapping by version:
-    - RPC 16/17: kebab-case
-    - RPC 18: snake_case
-- Session id challenge handling (`X-Transmission-Session-Id`) with automatic retry.
-- Safe request logging without sensitive data (`login`, `password`, host, auth header are not logged).
-- DI registration with validation
-- HTTP client resilience via `Microsoft.Extensions.Http.Resilience` default policy.
+### 1. Add the Package
 
-## Quick start
-
-To take full advantage of the library, first add the [TransmissionHub.Client](https://www.nuget.org/packages/TransmissionHub.Client)
-package to your project by running the following command:
+Add the [TransmissionHub.Client](https://www.nuget.org/packages/TransmissionHub.Client) package to your project:
 
 ```shell
 dotnet add package TransmissionHub.Client
 ```
 
-Next, you need to add the connection configuration to your Transmission API. \
-A detailed description of all parameters and default values is provided in the table below.
+### 2. Configure Your `appsettings.json`
+
+Add the connection settings for your Transmission API:
 
 ```json
 {
@@ -47,37 +70,39 @@ A detailed description of all parameters and default values is provided in the t
     }
 }
 ```
-<details>
-  <summary>Detailed description of parameters</summary>
 
-    | Parameter              | Description                                                                 | Required                                 | Default |
-    |------------------------|-----------------------------------------------------------------------------|------------------------------------------|---------|
-    | Url                    | Gets or sets the Transmission RPC endpoint URL                              | true                                     |         |
-    | DownloadDirectory      | Gets or sets a default download directory used by consumers                 | true                                     |         |
-    | RequiresAuthentication | Gets or sets a value indicating whether basic authentication should be used | false                                    | true    |
-    | Login                  | Gets or sets the basic authentication login                                 | true if `RequiresAuthentication` is true |         |
-    | Password               | Gets or sets the basic authentication password                              | true if `RequiresAuthentication` is true |         |
-    | RpcVersion             | Gets or sets the target Transmission RPC version                            | true                                     |         |
-    | TimeoutSeconds         | Gets or sets the HTTP timeout in seconds                                    | false                                    | 10 sec  |
-    | MaxSessionRetries      | Gets or sets the maximum number of retries for a Session ID (409 Conflict)  | false                                    | 1 retry |
-    | LogRequests            | Gets or sets a value indicating whether to log RPC requests.                | false                                    | false   |
-    | LogResponses           | Gets or sets a value indicating whether to log RPC responses.               | false                                    | false   |
+<details>
+  <summary>View detailed parameter descriptions</summary>
+
+| Parameter              | Description                                                                 | Required                                 | Default |
+|------------------------|-----------------------------------------------------------------------------|------------------------------------------|---------|
+| Url                    | The Transmission RPC endpoint URL.                                          | **true**                                 |         |
+| DownloadDirectory      | The default download directory used by consumers.                           | **true**                                 |         |
+| RequiresAuthentication | Indicates whether basic authentication should be used.                      | false                                    | `true`  |
+| Login                  | The basic authentication login.                                             | `true` if `RequiresAuthentication` is true |         |
+| Password               | The basic authentication password.                                          | `true` if `RequiresAuthentication` is true |         |
+| RpcVersion             | The target Transmission RPC version.                                        | **true**                                 |         |
+| TimeoutSeconds         | The HTTP timeout in seconds.                                                | false                                    | `10`    |
+| MaxSessionRetries      | The maximum number of retries for a Session ID (409 Conflict).              | false                                    | `1`     |
+| LogRequests            | Indicates whether to log RPC requests.                                      | false                                    | `false` |
+| LogResponses           | Indicates whether to log RPC responses.                                     | false                                    | `false` |
 
 </details>
 
-Next you need to register the required client in IServiceCollection, it's very simple, just one line.
+### 3. Register the Client
+
+In your `Program.cs` or startup configuration, register the client in the `IServiceCollection`:
 
 ```csharp
 services.AddTransmissionHubClient(configuration);
 ```
 
-You can now use `ITransmissionClient` regardless of the specified RPC version.
+You can now inject and use `ITransmissionClient` anywhere in your application.
 
-## Example
+## 💻 Example
 
 > [!IMPORTANT]
-> A simple example of connecting and making a request to the Transmission API. \
-> To improve the quality of your application, add: CORS, logging, metrics, etc.
+> This is a minimal example. For a production application, consider adding proper error handling, logging, CORS, and other middleware.
 
 ```csharp
 using TransmissionHub.Client.Abstractions;
@@ -85,30 +110,27 @@ using TransmissionHub.Client.Models.Requests;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Register the client
 builder.Services.AddTransmissionHubClient(builder.Configuration);
 
 var app = builder.Build();
 
-app.UseRouting();
-
-app.MapGet("/", async ([FromServices] ITransmissionClient client) =>
+app.MapGet("/torrents", async (ITransmissionClient client) =>
+{
+    var request = new TorrentGetRequest
     {
-        var request = new TorrentGetRequest
-        {
-            Fields =
-            [
-                TorrentGetRequest.TorrentFields.Id,
-                TorrentGetRequest.TorrentFields.Name,
-                TorrentGetRequest.TorrentFields.Status,
-            ]
-        };
+        Fields =
+        [
+            TorrentGetRequest.TorrentFields.Id,
+            TorrentGetRequest.TorrentFields.Name,
+            TorrentGetRequest.TorrentFields.Status,
+        ]
+    };
 
-        var result = await client.TorrentGetAsync(request);
+    var result = await client.TorrentGetAsync(request);
 
-        return Results.Ok(result.Value);
-    }
-);
+    return Results.Ok(result.Value);
+});
 
 app.Run();
 ```
-
