@@ -2,8 +2,6 @@
 
 A modern .NET library for the Transmission RPC API.
 
----
-
 ## 📋 Table of Contents
 - [What is this library?](#what-is-this-library)
 - [What problems does it solve?](#what-problems-does-it-solve)
@@ -11,8 +9,6 @@ A modern .NET library for the Transmission RPC API.
 - [Documentation](#documentation)
 - [Quick start](#quick-start)
 - [Example](#example)
-
----
 
 ## 🤔 What is this library?
 
