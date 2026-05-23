@@ -70,18 +70,18 @@ Add the connection settings for your Transmission API:
 <details>
   <summary>View detailed parameter descriptions</summary>
 
-| Parameter              | Description                                                                 | Required                                 | Default |
-|------------------------|-----------------------------------------------------------------------------|------------------------------------------|---------|
-| Url                    | The Transmission RPC endpoint URL.                                          | **true**                                 |         |
-| DownloadDirectory      | The default download directory used by consumers.                           | **true**                                 |         |
-| RequiresAuthentication | Indicates whether basic authentication should be used.                      | false                                    | `true`  |
-| Login                  | The basic authentication login.                                             | `true` if `RequiresAuthentication` is true |         |
-| Password               | The basic authentication password.                                          | `true` if `RequiresAuthentication` is true |         |
-| RpcVersion             | The target Transmission RPC version.                                        | **true**                                 |         |
-| TimeoutSeconds         | The HTTP timeout in seconds.                                                | false                                    | `10`    |
-| MaxSessionRetries      | The maximum number of retries for a Session ID (409 Conflict).              | false                                    | `1`     |
-| LogRequests            | Indicates whether to log RPC requests.                                      | false                                    | `false` |
-| LogResponses           | Indicates whether to log RPC responses.                                     | false                                    | `false` |
+| Parameter              | Description                                                    | Required                                   | Default |
+|------------------------|----------------------------------------------------------------|--------------------------------------------|---------|
+| Url                    | The Transmission RPC endpoint URL.                             | **true**                                   |         |
+| DownloadDirectory      | The default download directory used by consumers.              | **true**                                   |         |
+| RequiresAuthentication | Indicates whether basic authentication should be used.         | false                                      | `true`  |
+| Login                  | The basic authentication login.                                | `true` if `RequiresAuthentication` is true |         |
+| Password               | The basic authentication password.                             | `true` if `RequiresAuthentication` is true |         |
+| RpcVersion             | The target Transmission RPC version.                           | **true**                                   |         |
+| TimeoutSeconds         | The HTTP timeout in seconds.                                   | false                                      | `10`    |
+| MaxSessionRetries      | The maximum number of retries for a Session ID (409 Conflict). | false                                      | `1`     |
+| LogRequests            | Indicates whether to log RPC requests.                         | false                                      | `false` |
+| LogResponses           | Indicates whether to log RPC responses.                        | false                                      | `false` |
 
 </details>
 

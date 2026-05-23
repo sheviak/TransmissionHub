@@ -42,7 +42,3 @@ Your contributions are greatly appreciated!
 
 - **Email:** [sheviak.k@gmail.com](mailto:sheviak.k@gmail.com)
 - **Telegram:** [@sheviak](https://t.me/sheviak)
-
----
-
-*Developed with modern .NET practices for a seamless Transmission experience.*
