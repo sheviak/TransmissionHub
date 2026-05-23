@@ -1,4 +1,7 @@
-# 🧲 TransmissionHub
+<div align="center">
+  <img src="assets/icon.svg" alt="TransmissionHub Logo" width="128" />
+  <h1>TransmissionHub</h1>
+</div>
 
 **TransmissionHub** is a comprehensive ecosystem for managing and interacting with your Transmission torrent servers. Built on modern .NET technologies, it centralizes powerful tools to simplify torrent management for both developers and end-users.
 
