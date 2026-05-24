@@ -53,7 +53,7 @@ Add the connection settings for your Transmission API:
 
 ```json
 {
-    "TransmissionHub": {
+    "TransmissionHubClient": {
         "Url": "http://127.0.0.1:9091/transmission/rpc",
         "DownloadDirectory": "/downloads",
         "RequiresAuthentication": true,
