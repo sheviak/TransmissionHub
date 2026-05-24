@@ -11,9 +11,7 @@
         <Authors>Sheviak</Authors>
         <Company>Sheviak</Company>
         <RepositoryType>git</RepositoryType>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageReleaseNotes>See CHANGELOG.md for release details</PackageReleaseNotes>
+        <PackageReleaseNotes>See https://github.com/sheviak/TransmissionHub for details</PackageReleaseNotes>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>

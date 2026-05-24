@@ -1,6 +1,7 @@
 # 📦 TransmissionHub.Client
 
-A modern .NET library for the Transmission RPC API.
+A modern .NET library for the Transmission RPC API. \
+**TransmissionHub.Client supports RPC protocol versions: 16, 17, and 18**
 
 ## 📋 Table of Contents
 - [What is this library?](#what-is-this-library)
