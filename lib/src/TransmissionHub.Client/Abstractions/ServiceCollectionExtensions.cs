@@ -21,7 +21,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Configuration section name.
     /// </summary>
-    private const string SECTION_NAME = "TransmissionHub";
+    private const string SECTION_NAME = "TransmissionHubClient";
 
     /// <summary>
     /// Registers Transmission client from configuration section. Section name is <c>TransmissionHub</c>.
