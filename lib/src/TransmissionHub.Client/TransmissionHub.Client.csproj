@@ -6,6 +6,7 @@
         <PackageTags>transmission;rpc;torrent</PackageTags>
         <Description>Transmission RPC client library for external consumers</Description>
         <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions"/>
@@ -19,6 +20,10 @@
     </ItemGroup>
     <ItemGroup>
         <None Include="..\..\..\assets\icon.png" Pack="true" PackagePath="\" />
+        <None Include="..\..\..\LICENSE" Pack="true" PackagePath="\" />
         <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+    <ItemGroup>
+        <InternalsVisibleTo Include="TransmissionHub.Client.Tests" />
     </ItemGroup>
 </Project>
