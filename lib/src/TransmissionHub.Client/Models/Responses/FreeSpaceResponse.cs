@@ -8,12 +8,12 @@ public record FreeSpaceResponse
     /// <summary>
     /// The directory path queried.
     /// </summary>
-    public string? Path { get; init; }
+    public string Path { get; init; } = null!;
 
     /// <summary>
     /// The size, in bytes, of the free space in the directory.
     /// </summary>
-    public long? SizeBytes { get; init; }
+    public long SizeBytes { get; init; }
 
     /// <summary>
     /// The total capacity, in bytes, of the directory.
@@ -21,5 +21,5 @@ public record FreeSpaceResponse
     /// <remarks>
     /// Added in RPC version 17.
     /// </remarks>
-    public long? TotalSize { get; init; }
+    public long TotalSize { get; init; }
 }

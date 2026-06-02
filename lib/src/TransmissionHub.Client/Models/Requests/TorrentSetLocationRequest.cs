@@ -11,15 +11,15 @@ public record TorrentSetLocationRequest
     /// <remarks>
     /// Can contain integer IDs or hash strings.
     /// </remarks>
-    public IReadOnlyList<TorrentId>? Ids { get; init; }
+    public required IReadOnlyList<TorrentId> Ids { get; init; }
 
     /// <summary>
     /// The new directory for the torrent content.
     /// </summary>
-    public string? Location { get; init; }
+    public required string Location { get; init; }
 
     /// <summary>
     /// If true, move from previous location. Otherwise, search location for files.
     /// </summary>
-    public bool? Move { get; init; }
+    public bool Move { get; init; }
 }
