@@ -11,7 +11,7 @@ public record GroupGetResponse
     /// <summary>
     /// A list of bandwidth group description objects.
     /// </summary>
-    public IReadOnlyList<BandwidthGroup>? Group { get; init; }
+    public IReadOnlyList<BandwidthGroup> Group { get; init; } = null!;
 }
 
 /// <summary>
@@ -22,30 +22,30 @@ public record BandwidthGroup
     /// <summary>
     /// True if session upload limits are honored.
     /// </summary>
-    public bool? HonorsSessionLimits { get; init; }
+    public bool HonorsSessionLimits { get; init; }
 
     /// <summary>
     /// Bandwidth group name.
     /// </summary>
-    public string? Name { get; init; }
+    public string Name { get; init; } = null!;
 
     /// <summary>
     /// Max global download speed (KBps).
     /// </summary>
-    public int? SpeedLimitDown { get; init; }
+    public int SpeedLimitDown { get; init; }
 
     /// <summary>
     /// True means enabled.
     /// </summary>
-    public bool? SpeedLimitDownEnabled { get; init; }
+    public bool SpeedLimitDownEnabled { get; init; }
 
     /// <summary>
     /// Max global upload speed (KBps).
     /// </summary>
-    public int? SpeedLimitUp { get; init; }
+    public int SpeedLimitUp { get; init; }
 
     /// <summary>
     /// True means enabled.
     /// </summary>
-    public bool? SpeedLimitUpEnabled { get; init; }
+    public bool SpeedLimitUpEnabled { get; init; }
 }

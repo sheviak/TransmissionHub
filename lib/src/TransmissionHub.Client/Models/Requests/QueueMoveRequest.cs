@@ -14,5 +14,5 @@ public record QueueMoveRequest
     /// <remarks>
     /// Can contain integer IDs or hash strings.
     /// </remarks>
-    public IReadOnlyList<TorrentId>? Ids { get; init; }
+    public required IReadOnlyList<TorrentId> Ids { get; init; }
 }

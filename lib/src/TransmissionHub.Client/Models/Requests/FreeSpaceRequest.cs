@@ -8,5 +8,5 @@ public record FreeSpaceRequest
     /// <summary>
     /// The directory path to query.
     /// </summary>
-    public string? Path { get; init; }
+    public required string Path { get; init; }
 }

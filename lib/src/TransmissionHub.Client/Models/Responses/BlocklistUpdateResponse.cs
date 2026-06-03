@@ -11,5 +11,5 @@ public record BlocklistUpdateResponse
     /// <summary>
     /// Number of rules in the newly updated blocklist.
     /// </summary>
-    public int? BlocklistSize { get; init; }
+    public int BlocklistSize { get; init; }
 }

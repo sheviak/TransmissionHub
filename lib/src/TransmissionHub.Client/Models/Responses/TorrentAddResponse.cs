@@ -24,15 +24,15 @@ public record TorrentAddedInfo
     /// <summary>
     /// The torrent's numeric identifier.
     /// </summary>
-    public int? Id { get; init; }
+    public int Id { get; init; }
 
     /// <summary>
     /// The torrent's display name.
     /// </summary>
-    public string? Name { get; init; }
+    public string Name { get; init; } = null!;
 
     /// <summary>
     /// The torrent's info hash string.
     /// </summary>
-    public string? HashString { get; init; }
+    public string HashString { get; init; } = null!;
 }

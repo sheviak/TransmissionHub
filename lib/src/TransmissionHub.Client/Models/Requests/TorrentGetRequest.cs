@@ -14,12 +14,12 @@ public record TorrentGetRequest
     /// <summary>
     /// Array of fields to return.
     /// </summary>
-    public IReadOnlyList<string>? Fields { get; init; }
+    public required IReadOnlyList<string> Fields { get; init; }
 
     /// <summary>
     /// Specifies how to format the torrents response field. Allowed values are 'objects' (default) and 'table'.
     /// </summary>
-    public string? Format { get; init; }
+    public string Format { get; private set; } = "objects";
 
     /// <summary>
     /// Constants for all possible torrent fields.

@@ -365,30 +365,30 @@ public record UnitsInfo
     /// <summary>
     /// 4 strings: KB/s, MB/s, GB/s, TB/s.
     /// </summary>
-    public IReadOnlyList<string>? SpeedUnits { get; init; }
+    public IReadOnlyList<string> SpeedUnits { get; init; } = null!;
 
     /// <summary>
     /// Number of bytes in a KB (ie: 1000).
     /// </summary>
-    public int? SpeedBytes { get; init; }
+    public int SpeedBytes { get; init; }
 
     /// <summary>
     /// 4 strings: KB, MB, GB, TB.
     /// </summary>
-    public IReadOnlyList<string>? SizeUnits { get; init; }
+    public IReadOnlyList<string> SizeUnits { get; init; } = null!;
 
     /// <summary>
     /// Number of bytes in a KB (ie: 1000).
     /// </summary>
-    public int? SizeBytes { get; init; }
+    public int SizeBytes { get; init; }
 
     /// <summary>
     /// 4 strings: KB, MB, GB, TB.
     /// </summary>
-    public IReadOnlyList<string>? MemoryUnits { get; init; }
+    public IReadOnlyList<string> MemoryUnits { get; init; } = null!;
 
     /// <summary>
     /// Number of bytes in a KB (ie: 1024).
     /// </summary>
-    public int? MemoryBytes { get; init; }
+    public int MemoryBytes { get; init; }
 }
