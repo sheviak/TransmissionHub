@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using TransmissionHub.Client.Abstractions;
 using TransmissionHub.Client.Internal.Dialects;
+using TransmissionHub.Client.Internal.Validation;
 using TransmissionHub.Client.Models.Requests;
 using TransmissionHub.Client.Models.Responses;
 
@@ -13,8 +14,9 @@ internal sealed class TransmissionClientV16(
     HttpClient httpClient,
     IRpcDialect rpcDialect,
     TransmissionClientOptions options,
+    IValidatorProvider validatorProvider,
     ILogger<TransmissionClientV16> logger)
-    : TransmissionClientBase(httpClient, rpcDialect, options, logger)
+    : TransmissionClientBase(httpClient, rpcDialect, options, validatorProvider, logger)
 {
     /// <inheritdoc />
     public override Task<Result<GroupGetResponse>> GroupGetAsync(GroupGetRequest request, CancellationToken cancellationToken = default) =>

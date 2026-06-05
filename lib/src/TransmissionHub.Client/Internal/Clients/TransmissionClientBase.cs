@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using TransmissionHub.Client.Abstractions;
 using TransmissionHub.Client.Internal.Dialects;
+using TransmissionHub.Client.Internal.Validation;
 using TransmissionHub.Client.Models.Requests;
 using TransmissionHub.Client.Models.Responses;
 
@@ -18,6 +19,7 @@ internal abstract class TransmissionClientBase : ITransmissionClient
     private readonly HttpClient _httpClient;
     private readonly IRpcDialect _rpcDialect;
     private readonly TransmissionClientOptions _options;
+    private readonly IValidatorProvider _validatorProvider;
 
     /// <summary>
     /// Initializes a new <see cref="TransmissionClientBase"/> instance.
@@ -26,16 +28,19 @@ internal abstract class TransmissionClientBase : ITransmissionClient
         HttpClient httpClient,
         IRpcDialect rpcDialect,
         TransmissionClientOptions options,
+        IValidatorProvider validatorProvider,
         ILogger logger)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
         ArgumentNullException.ThrowIfNull(rpcDialect);
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(validatorProvider);
         ArgumentNullException.ThrowIfNull(logger);
 
         _httpClient = httpClient;
         _rpcDialect = rpcDialect;
         _options = options;
+        _validatorProvider = validatorProvider;
         _logger = logger;
     }
 
@@ -108,7 +113,7 @@ internal abstract class TransmissionClientBase : ITransmissionClient
     {
         var fields = request.Fields ?? [];
         var normalizedFields = _rpcDialect.NormalizeFields(fields);
-        var updatedRequest = request with { Fields = normalizedFields };
+        var updatedRequest = new SessionGetRequest { Fields = normalizedFields };
         return ExecuteRawAsync<SessionGetRequest, SessionGetResponse>(RpcMethod.SessionGet, updatedRequest, cancellationToken);
     }
 
@@ -144,13 +149,13 @@ internal abstract class TransmissionClientBase : ITransmissionClient
     public virtual Task<Result> GroupSetAsync(GroupSetRequest request, CancellationToken cancellationToken = default) =>
         ExecuteAsync(RpcMethod.GroupSet, request, cancellationToken);
 
-    private async Task<Result> ExecuteAsync<TRequest>(RpcMethod method, TRequest arguments, CancellationToken cancellationToken)
+    private async Task<Result> ExecuteAsync<TRequest>(RpcMethod method, TRequest arguments, CancellationToken cancellationToken) where TRequest : class
     {
         var result = await ExecuteRawAsync(method, arguments, cancellationToken);
         return result.IsSuccess ? Result.Ok() : Result.Fail(result.Error!.Value);
     }
 
-    private async Task<Result<TResponse>> ExecuteRawAsync<TRequest, TResponse>(RpcMethod method, TRequest arguments, CancellationToken cancellationToken)
+    private async Task<Result<TResponse>> ExecuteRawAsync<TRequest, TResponse>(RpcMethod method, TRequest arguments, CancellationToken cancellationToken) where TRequest : class
     {
         var result = await ExecuteRawAsync(method, arguments, cancellationToken);
 
@@ -171,8 +176,15 @@ internal abstract class TransmissionClientBase : ITransmissionClient
         return Result.Fail<TResponse>(deserializationResult.Error!.Value);
     }
 
-    private async Task<Result<JsonElement>> ExecuteRawAsync<TRequest>(RpcMethod method, TRequest arguments, CancellationToken cancellationToken)
+    private async Task<Result<JsonElement>> ExecuteRawAsync<TRequest>(RpcMethod method, TRequest arguments, CancellationToken cancellationToken) where TRequest : class
     {
+        var validationResult = _validatorProvider.Validate(arguments);
+
+        if (validationResult.IsFailure)
+        {
+            return Result.Fail<JsonElement>(validationResult.Error!.Value);
+        }
+
         try
         {
             var wireMethodName = _rpcDialect.ConvertToWireMethodName(method);

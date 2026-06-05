@@ -11,7 +11,7 @@ public record GroupSetRequest
     /// <summary>
     /// True if session upload limits are honored.
     /// </summary>
-    public required bool HonorsSessionLimits { get; init; }
+    public bool? HonorsSessionLimits { get; init; }
 
     /// <summary>
     /// Bandwidth group name.
@@ -21,7 +21,7 @@ public record GroupSetRequest
     /// <summary>
     /// Max global download speed (KBps).
     /// </summary>
-    public required int SpeedLimitDown { get; init; }
+    public int? SpeedLimitDown { get; init; }
 
     /// <summary>
     /// True means enabled.
@@ -31,7 +31,7 @@ public record GroupSetRequest
     /// <summary>
     /// Max global upload speed (KBps).
     /// </summary>
-    public required int SpeedLimitUp { get; init; }
+    public int? SpeedLimitUp { get; init; }
 
     /// <summary>
     /// True means enabled.
