@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using TransmissionHub.Client.Abstractions;
 using TransmissionHub.Client.Internal.Protocols;
@@ -43,8 +44,14 @@ internal sealed class JsonRpcDialect : IRpcDialect
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<string> NormalizeFields(IReadOnlyList<string> pascalCaseFields)
+    [return: NotNullIfNotNull(nameof(pascalCaseFields))]
+    public IReadOnlyList<string>? NormalizeFields(IReadOnlyList<string>? pascalCaseFields)
     {
+        if (pascalCaseFields is not { Count: > 0 })
+        {
+            return null;
+        }
+
         var result = new string[pascalCaseFields.Count];
 
         for (var i = 0; i < pascalCaseFields.Count; i++)

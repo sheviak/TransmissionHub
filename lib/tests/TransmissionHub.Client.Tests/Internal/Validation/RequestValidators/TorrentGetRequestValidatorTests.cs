@@ -33,4 +33,18 @@ public class TorrentGetRequestValidatorTests
         await Assert.That(result.IsFailure).IsTrue();
         await Assert.That(result.Error!.Value.Message).IsNotEmpty();
     }
+
+    [Test]
+    public async Task Validate_FieldsNull_ReturnsFail()
+    {
+        // Arrange
+        var request = new TorrentGetRequest { Fields = null! };
+
+        // Act
+        var result = _validator.Validate(request);
+
+        // Assert
+        await Assert.That(result.IsFailure).IsTrue();
+        await Assert.That(result.Error!.Value.Message).IsNotEmpty();
+    }
 }

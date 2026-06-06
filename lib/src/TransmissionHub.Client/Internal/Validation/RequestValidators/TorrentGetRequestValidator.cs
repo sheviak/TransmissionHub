@@ -9,7 +9,7 @@ internal class TorrentGetRequestValidator : IValidatableRequest<TorrentGetReques
     /// <inheritdoc />
     public Result Validate(TorrentGetRequest request)
     {
-        if (request.Fields.Count == 0)
+        if (request.Fields is null or { Count: 0 })
         {
             return Result.Fail("Fields list cannot be empty.");
         }

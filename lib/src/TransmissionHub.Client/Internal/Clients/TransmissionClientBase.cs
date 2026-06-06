@@ -111,8 +111,7 @@ internal abstract class TransmissionClientBase : ITransmissionClient
     /// <inheritdoc />
     public virtual Task<Result<SessionGetResponse>> SessionGetAsync(SessionGetRequest request, CancellationToken cancellationToken = default)
     {
-        var fields = request.Fields ?? [];
-        var normalizedFields = _rpcDialect.NormalizeFields(fields);
+        var normalizedFields = _rpcDialect.NormalizeFields(request.Fields);
         var updatedRequest = new SessionGetRequest { Fields = normalizedFields };
         return FetchAsync<SessionGetRequest, SessionGetResponse>(RpcMethod.SessionGet, updatedRequest, cancellationToken);
     }
