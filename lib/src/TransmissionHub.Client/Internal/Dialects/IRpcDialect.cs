@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using TransmissionHub.Client.Abstractions;
 
@@ -41,12 +42,20 @@ internal interface IRpcDialect
     /// Normalizes a list of field names from PascalCase to the wire format of this dialect.
     /// </summary>
     /// <remarks>
-    /// Used for methods that accept a <c>fields</c> parameter, such as
-    /// <c>torrent-get</c> and <c>session-get</c>.
+    /// Used for methods that accept a <c>fields</c> parameter, such as <c>torrent-get</c> and <c>session-get</c>.
+    /// Returns <see langword="null"/> when <paramref name="pascalCaseFields"/> is <see langword="null"/> or empty,
+    /// which signals to the serializer that the <c>fields</c> property should be omitted entirely
+    /// (causing Transmission to return all available fields).
     /// </remarks>
-    /// <param name="pascalCaseFields">Field names in PascalCase (e.g. <c>FileCount</c>).</param>
-    /// <returns>Field names in the dialect's wire format.</returns>
-    public IReadOnlyList<string> NormalizeFields(IReadOnlyList<string> pascalCaseFields);
+    /// <param name="pascalCaseFields">
+    /// Field names in PascalCase (e.g. <c>FileCount</c>), or <see langword="null"/> / an empty list to request all fields.
+    /// </param>
+    /// <returns>
+    /// Field names converted to the dialect's wire format,
+    /// or <see langword="null"/> if <paramref name="pascalCaseFields"/> was <see langword="null"/> or empty.
+    /// </returns>
+    [return: NotNullIfNotNull(nameof(pascalCaseFields))]
+    public IReadOnlyList<string>? NormalizeFields(IReadOnlyList<string>? pascalCaseFields);
 
     /// <summary>
     /// Extracts the payload <see cref="JsonElement"/> from a raw JSON response string.
