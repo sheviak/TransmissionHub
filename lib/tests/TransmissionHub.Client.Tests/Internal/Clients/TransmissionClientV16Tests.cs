@@ -2,8 +2,10 @@ using System.Net;
 using System.Net.Mime;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
+using TransmissionHub.Client.Abstractions;
 using TransmissionHub.Client.Internal.Clients;
 using TransmissionHub.Client.Internal.Dialects;
+using TransmissionHub.Client.Internal.Validation;
 using TransmissionHub.Client.Models.Enums;
 using TransmissionHub.Client.Models.Requests;
 
@@ -21,6 +23,14 @@ public class TransmissionClientV16Tests
                 StatusCode = statusCode,
                 Content = new StringContent(responseContent, Encoding.UTF8, MediaTypeNames.Application.Json)
             });
+        }
+    }
+
+    private class MockValidatorProvider : IValidatorProvider
+    {
+        public Result Validate<TRequest>(TRequest request) where TRequest : class
+        {
+            return Result.Ok();
         }
     }
 
@@ -55,8 +65,9 @@ public class TransmissionClientV16Tests
             Url = new Uri("http://localhost:9091/transmission/rpc"),
             DownloadDirectory = "/downloads",
         };
+        var validatorProvider = new MockValidatorProvider();
 
-        var client = new TransmissionClientV16(httpClient, dialect, options, NullLogger<TransmissionClientV16>.Instance);
+        var client = new TransmissionClientV16(httpClient, dialect, options, validatorProvider, NullLogger<TransmissionClientV16>.Instance);
 
         var request = new TorrentGetRequest
         {
@@ -81,7 +92,7 @@ public class TransmissionClientV16Tests
         await Assert.That(result.Value.Torrents).IsNotNull();
         await Assert.That(result.Value.Torrents).Count().IsEqualTo(1);
 
-        var torrent = result.Value.Torrents![0];
+        var torrent = result.Value.Torrents[0];
 
         await Assert.That(torrent.Id).IsEqualTo(1);
         await Assert.That(torrent.PercentDone).IsEqualTo(1);

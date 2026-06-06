@@ -10,6 +10,7 @@ using Polly;
 using TransmissionHub.Client.Internal.Clients;
 using TransmissionHub.Client.Internal.Dialects;
 using TransmissionHub.Client.Internal.Http;
+using TransmissionHub.Client.Internal.Validation;
 
 namespace TransmissionHub.Client.Abstractions;
 
@@ -46,6 +47,7 @@ public static class ServiceCollectionExtensions
         ValidateSettings(options);
 
         services.AddSingleton(options!);
+        services.AddTransmissionValidation();
 
         return options!.RpcVersion switch
         {
@@ -106,5 +108,33 @@ public static class ServiceCollectionExtensions
         var validationContext = new ValidationContext(settings);
 
         Validator.ValidateObject(settings, validationContext, validateAllProperties: true);
+    }
+
+    /// <summary>
+    /// Registers the validation provider and all validators from the client assembly.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    internal static IServiceCollection AddTransmissionValidation(this IServiceCollection services)
+    {
+        services.AddSingleton<IValidatorProvider, ValidatorProvider>();
+
+        var validatorInterfaceType = typeof(IValidatableRequest<>);
+        var validators = typeof(ServiceCollectionExtensions).Assembly
+            .GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false }
+                        && t.GetInterfaces().Any(i =>
+                            i.IsGenericType && i.GetGenericTypeDefinition() == validatorInterfaceType))
+            .ToArray();
+
+        foreach (var validatorType in validators)
+        {
+            var interfaceType = validatorType
+                .GetInterfaces()
+                .First(i => i.IsGenericType && i.GetGenericTypeDefinition() == validatorInterfaceType);
+
+            services.AddSingleton(interfaceType, validatorType);
+        }
+
+        return services;
     }
 }
