@@ -246,9 +246,8 @@ public interface ITransmissionClient
     /// <remarks>
     /// Available since RPC version 16.
     /// </remarks>
-    /// <param name="request">The blocklist update request.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    public Task<Result<BlocklistUpdateResponse>> BlocklistUpdateAsync(BlocklistUpdateRequest request, CancellationToken cancellationToken = default);
+    public Task<Result<BlocklistUpdateResponse>> BlocklistUpdateAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets information about bandwidth groups.
