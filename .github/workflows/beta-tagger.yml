@@ -32,26 +32,26 @@ jobs:
         run: |
           PROJECT="${{ github.event.inputs.project }}"
           CUSTOM="${{ github.event.inputs.custom_version }}"
-          
+
           if [ -n "$CUSTOM" ]; then
             TAG_NAME="$PROJECT/v$CUSTOM"
           else
             # Find base version (latest clean tag in HISTORY of current branch/HEAD)
             # We use grep -E for strict stable version matching (X.Y.Z)
             BASE_TAG=$(git tag -l "$PROJECT/v*" --sort=-v:refname --merged HEAD | grep -E "^$PROJECT/v[0-9]+\.[0-9]+\.[0-9]+$" | head -n 1)
-            
-            if [ -z "$BASE_TAG" ]; then 
+
+            if [ -z "$BASE_TAG" ]; then
               # Fallback to latest global tag if no tag in history
               BASE_TAG=$(git tag -l "$PROJECT/v*" --sort=-v:refname | grep -E "^$PROJECT/v[0-9]+\.[0-9]+\.[0-9]+$" | head -n 1 || echo "$PROJECT/v0.0.0")
             fi
-            
+
             echo "Base version tag found: $BASE_TAG"
             BASE_VERSION=${BASE_TAG#$PROJECT/v}
-            
+
             # Find latest beta for this base version across all branches
             # Matches format X.Y.Z-betaN
             LATEST_BETA=$(git tag -l "$PROJECT/v$BASE_VERSION-beta*" --sort=-v:refname | grep -E "^$PROJECT/v$BASE_VERSION-beta[0-9]+$" | head -n 1)
-            
+
             if [ -z "$LATEST_BETA" ]; then
               NEXT_NUM=1
             else
@@ -61,7 +61,7 @@ jobs:
             fi
             TAG_NAME="$PROJECT/v$BASE_VERSION-beta$NEXT_NUM"
           fi
-          
+
           echo "Creating beta tag: $TAG_NAME"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
