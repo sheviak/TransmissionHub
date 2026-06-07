@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -81,5 +82,3 @@ jobs:
           else
             echo "No changes requiring a bot version bump (Current: ${LATEST_TAG:-<none>})."
           fi
-
-
