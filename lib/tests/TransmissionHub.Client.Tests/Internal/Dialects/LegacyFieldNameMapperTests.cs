@@ -100,45 +100,4 @@ public class LegacyFieldNameMapperTests
         await Assert.That(LegacyFieldNameMapper.ToArgumentName("Location")).IsEqualTo("location");
         await Assert.That(LegacyFieldNameMapper.ToArgumentName("Metainfo")).IsEqualTo("metainfo");
     }
-
-    // -------------------------------------------------------------------------
-    // ToLegacyWireName — combined lookup, kept for backward compatibility
-    // -------------------------------------------------------------------------
-
-    [Test]
-    public async Task ToLegacyWireName_AmbiguousDownloadDir_ResolvesToKebab()
-    {
-        // Argument overrides take precedence, so the ambiguous name resolves
-        // to the kebab-case form
-        await Assert.That(LegacyFieldNameMapper.ToLegacyWireName("DownloadDir")).IsEqualTo("download-dir");
-    }
-
-    [Test]
-    public async Task ToLegacyWireName_SessionStatsNestedKeys_ReturnKebab()
-    {
-        // These are top-level keys in session-stats response
-        await Assert.That(LegacyFieldNameMapper.ToLegacyWireName("CumulativeStats")).IsEqualTo("cumulative-stats");
-        await Assert.That(LegacyFieldNameMapper.ToLegacyWireName("CurrentStats")).IsEqualTo("current-stats");
-    }
-
-    [Test]
-    public async Task ToLegacyWireName_FreeSpaceField_ReturnsKebab()
-    {
-        await Assert.That(LegacyFieldNameMapper.ToLegacyWireName("SizeBytes")).IsEqualTo("size-bytes");
-    }
-
-    [Test]
-    public async Task ToLegacyWireName_TorrentGetKebabException_ReturnsKebab()
-    {
-        await Assert.That(LegacyFieldNameMapper.ToLegacyWireName("FileCount")).IsEqualTo("file-count");
-        await Assert.That(LegacyFieldNameMapper.ToLegacyWireName("PeerLimit")).IsEqualTo("peer-limit");
-        await Assert.That(LegacyFieldNameMapper.ToLegacyWireName("PrimaryMimeType")).IsEqualTo("primary-mime-type");
-    }
-
-    [Test]
-    public async Task ToLegacyWireName_RegularField_ReturnsCamelCase()
-    {
-        await Assert.That(LegacyFieldNameMapper.ToLegacyWireName("ActivityDate")).IsEqualTo("activityDate");
-        await Assert.That(LegacyFieldNameMapper.ToLegacyWireName("HashString")).IsEqualTo("hashString");
-    }
 }

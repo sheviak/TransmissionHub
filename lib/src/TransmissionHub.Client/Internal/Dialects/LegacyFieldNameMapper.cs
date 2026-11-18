@@ -129,28 +129,6 @@ internal static class LegacyFieldNameMapper
     };
 
     /// <summary>
-    /// Response-only top-level keys of methods that take no <c>fields</c> parameter
-    /// (session-stats, free-space, port-test).
-    /// </summary>
-    /// <remarks>
-    /// Not used by the current request pipeline: response deserialization goes through
-    /// <see cref="RpcPayloadKeyNormalizer"/>. Retained as part of the legacy name table
-    /// so that legacy (RPC 16) name lookups keep resolving these keys.
-    /// </remarks>
-    private static readonly Dictionary<string, string> ResponseKeyOverrides = new(StringComparer.Ordinal)
-    {
-        // session-stats (kebab-case nested objects)
-        ["CumulativeStats"] = "cumulative-stats",
-        ["CurrentStats"] = "current-stats",
-
-        // free-space
-        ["SizeBytes"] = "size-bytes",
-
-        // port-test
-        ["PortIsOpen"] = "port-is-open",
-    };
-
-    /// <summary>
     /// Converts a PascalCase field name to its wire name in the <c>fields</c> array of torrent-get.
     /// </summary>
     /// <remarks>
@@ -190,26 +168,6 @@ internal static class LegacyFieldNameMapper
         => ArgumentOverrides.TryGetValue(pascalCase, out var wireName)
             ? wireName
             : Resolve(pascalCase, SessionFieldOverrides);
-
-    /// <summary>
-    /// Converts a PascalCase name to its legacy wire name using a combined lookup
-    /// across all scopes.
-    /// </summary>
-    /// <remarks>
-    /// Predecessor of the scope-specific methods, kept for backward compatibility with
-    /// existing lookups and tests. Argument overrides take precedence, so ambiguous
-    /// names such as <c>DownloadDir</c> resolve to the kebab-case form
-    /// (<c>download-dir</c>). Prefer <see cref="ToTorrentGetFieldName"/>,
-    /// <see cref="ToSessionFieldName"/> and <see cref="ToArgumentName"/> in request code.
-    /// </remarks>
-    /// <param name="pascalCase">The field name in PascalCase.</param>
-    /// <returns>The field name in legacy wire format.</returns>
-    public static string ToLegacyWireName(string pascalCase)
-        => ArgumentOverrides.TryGetValue(pascalCase, out var argumentName)
-            ? argumentName
-            : SessionFieldOverrides.TryGetValue(pascalCase, out var sessionName)
-                ? sessionName
-                : Resolve(pascalCase, TorrentGetFieldOverrides, ResponseKeyOverrides);
 
     /// <summary>
     /// Resolves <paramref name="pascalCase"/> against the provided override dictionaries in order,
