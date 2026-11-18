@@ -78,7 +78,7 @@ public class JsonRpcDialectTests
     {
         // Arrange
         // In JSON-RPC 2.0 dialect, ALL fields use snake_case — no exceptions.
-        var wireFields = _dialect.NormalizeFields([
+        var wireFields = _dialect.NormalizeFields(RpcMethod.TorrentGet, [
             TorrentGetRequest.TorrentFields.Id,          // "Id"         → "id"
             TorrentGetRequest.TorrentFields.Name,        // "Name"       → "name"
             TorrentGetRequest.TorrentFields.FileCount,   // "FileCount"   → "file_count" (no kebab here)
@@ -122,13 +122,108 @@ public class JsonRpcDialectTests
         var fields = new[] { "FileCount", "PeerLimit", "ActivityDate", "HashString" };
 
         // Act
-        var result = _dialect.NormalizeFields(fields);
+        var result = _dialect.NormalizeFields(RpcMethod.TorrentGet, fields);
 
         // Assert
         await Assert.That(result[0]).IsEqualTo("file_count");
         await Assert.That(result[1]).IsEqualTo("peer_limit");
         await Assert.That(result[2]).IsEqualTo("activity_date");
         await Assert.That(result[3]).IsEqualTo("hash_string");
+    }
+
+    [Test]
+    public async Task NormalizeFields_MethodScope_IsIrrelevant()
+    {
+        // Arrange
+        // The method parameter exists for the legacy dialect; the JSON-RPC dialect
+        // must ignore it and produce identical snake_case for any scope
+        var fields = new[] { "DownloadDir", "DownloadDirFreeSpace" };
+
+        // Act
+        var torrentGetResult = _dialect.NormalizeFields(RpcMethod.TorrentGet, fields);
+        var sessionGetResult = _dialect.NormalizeFields(RpcMethod.SessionGet, fields);
+
+        // Assert
+        await Assert.That(torrentGetResult[0]).IsEqualTo("download_dir");
+        await Assert.That(torrentGetResult[1]).IsEqualTo("download_dir_free_space");
+        await Assert.That(sessionGetResult[0]).IsEqualTo(torrentGetResult[0]);
+        await Assert.That(sessionGetResult[1]).IsEqualTo(torrentGetResult[1]);
+    }
+
+    // =========================================================================
+    // SerializeRequest — argument bodies use snake_case
+    // =========================================================================
+
+    [Test]
+    public async Task SerializeRequest_TorrentAdd_ArgumentKeys_UseSnakeCase()
+    {
+        // Arrange
+        // Same request model as the legacy dialect, but v18+ uses snake_case keys
+        var request = new TorrentAddRequest
+        {
+            DownloadDir = "/downloads",
+            PeerLimit = 10,
+            FilesWanted = [1, 2],
+            Paused = true,
+        };
+
+        // Act
+        var json = _dialect.SerializeRequest(RpcMethod.TorrentAdd, request);
+        using var doc = JsonDocument.Parse(json.Value);
+        var @params = doc.RootElement.GetProperty("params");
+
+        // Assert
+        await Assert.That(@params.GetProperty("download_dir").GetString()).IsEqualTo("/downloads");
+        await Assert.That(@params.GetProperty("peer_limit").GetInt32()).IsEqualTo(10);
+        await Assert.That(@params.GetProperty("files_wanted").EnumerateArray().Select(e => e.GetInt32())).IsEquivalentTo([1, 2]);
+        await Assert.That(@params.GetProperty("paused").GetBoolean()).IsTrue();
+        // No kebab-case or PascalCase keys remain
+        await Assert.That(@params.TryGetProperty("download-dir", out _)).IsFalse();
+        await Assert.That(@params.TryGetProperty("downloadDir", out _)).IsFalse();
+    }
+
+    [Test]
+    public async Task SerializeRequest_TorrentRemove_ArgumentKeys_UseSnakeCase()
+    {
+        // Arrange
+        var request = new TorrentRemoveRequest
+        {
+            Ids = [new TorrentId(1)],
+            DeleteLocalData = true,
+        };
+
+        // Act
+        var json = _dialect.SerializeRequest(RpcMethod.TorrentRemove, request);
+        using var doc = JsonDocument.Parse(json.Value);
+        var @params = doc.RootElement.GetProperty("params");
+
+        // Assert
+        await Assert.That(@params.TryGetProperty("delete_local_data", out var flag)).IsTrue();
+        await Assert.That(flag.GetBoolean()).IsTrue();
+        await Assert.That(@params.TryGetProperty("deleteLocalData", out _)).IsFalse();
+        await Assert.That(@params.TryGetProperty("delete-local-data", out _)).IsFalse();
+    }
+
+    [Test]
+    public async Task SerializeRequest_SessionSet_ArgumentKeys_UseSnakeCase()
+    {
+        // Arrange
+        var request = new SessionSetRequest
+        {
+            AltSpeedDown = 100,
+            DownloadDir = "/downloads",
+            PeerPort = 51413,
+        };
+
+        // Act
+        var json = _dialect.SerializeRequest(RpcMethod.SessionSet, request);
+        using var doc = JsonDocument.Parse(json.Value);
+        var @params = doc.RootElement.GetProperty("params");
+
+        // Assert
+        await Assert.That(@params.GetProperty("alt_speed_down").GetInt32()).IsEqualTo(100);
+        await Assert.That(@params.GetProperty("download_dir").GetString()).IsEqualTo("/downloads");
+        await Assert.That(@params.GetProperty("peer_port").GetInt32()).IsEqualTo(51413);
     }
 
     // =========================================================================

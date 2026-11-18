@@ -43,10 +43,17 @@ internal interface IRpcDialect
     /// </summary>
     /// <remarks>
     /// Used for methods that accept a <c>fields</c> parameter, such as <c>torrent-get</c> and <c>session-get</c>.
+    /// The <paramref name="method"/> scope matters for the legacy dialect, where the same
+    /// PascalCase name can map to different wire names (e.g. <c>DownloadDir</c> is
+    /// <c>downloadDir</c> for torrent-get but <c>download-dir</c> for session-get);
+    /// the JSON-RPC 2.0 dialect ignores it because v18+ field names are uniformly snake_case.
     /// Returns <see langword="null"/> when <paramref name="pascalCaseFields"/> is <see langword="null"/> or empty,
     /// which signals to the serializer that the <c>fields</c> property should be omitted entirely
     /// (causing Transmission to return all available fields).
     /// </remarks>
+    /// <param name="method">
+    /// The RPC method the fields belong to. Selects the wire-name scope in the legacy dialect.
+    /// </param>
     /// <param name="pascalCaseFields">
     /// Field names in PascalCase (e.g. <c>FileCount</c>), or <see langword="null"/> / an empty list to request all fields.
     /// </param>
@@ -55,7 +62,7 @@ internal interface IRpcDialect
     /// or <see langword="null"/> if <paramref name="pascalCaseFields"/> was <see langword="null"/> or empty.
     /// </returns>
     [return: NotNullIfNotNull(nameof(pascalCaseFields))]
-    public IReadOnlyList<string>? NormalizeFields(IReadOnlyList<string>? pascalCaseFields);
+    public IReadOnlyList<string>? NormalizeFields(RpcMethod method, IReadOnlyList<string>? pascalCaseFields);
 
     /// <summary>
     /// Extracts the payload <see cref="JsonElement"/> from a raw JSON response string.

@@ -62,14 +62,15 @@ public class RpcRequestDialectTests
     public async Task SerializeRequest_TorrentGet_FieldsArrayContainsLegacyWireNames()
     {
         // Arrange
-        // NormalizeFields converts PascalCase → legacy wire names (kebab or camelCase).
-        // The caller is responsible for normalizing fields before passing them to the request.
-        var wireFields = _dialect.NormalizeFields([
-            TorrentGetRequest.TorrentFields.Id,              // "Id"            → "id"           (camelCase fallback)
-            TorrentGetRequest.TorrentFields.Name,            // "Name"          → "name"         (camelCase fallback)
-            TorrentGetRequest.TorrentFields.FileCount,       // "FileCount"      → "file-count"   (kebab override)
-            TorrentGetRequest.TorrentFields.DownloadDir,     // "DownloadDir"    → "download-dir" (kebab override)
-            TorrentGetRequest.TorrentFields.PeerLimit,       // "PeerLimit"      → "peer-limit"   (kebab override)
+        // NormalizeFields converts PascalCase → legacy wire names per the torrent-get
+        // field table (camelCase with kebab exceptions). The caller is responsible
+        // for normalizing fields before passing them to the request.
+        var wireFields = _dialect.NormalizeFields(RpcMethod.TorrentGet, [
+            TorrentGetRequest.TorrentFields.Id,              // "Id"            → "id"             (camelCase fallback)
+            TorrentGetRequest.TorrentFields.Name,            // "Name"          → "name"           (camelCase fallback)
+            TorrentGetRequest.TorrentFields.FileCount,       // "FileCount"      → "file-count"     (kebab override)
+            TorrentGetRequest.TorrentFields.DownloadDir,     // "DownloadDir"    → "downloadDir"    (camelCase override)
+            TorrentGetRequest.TorrentFields.PeerLimit,       // "PeerLimit"      → "peer-limit"     (kebab override)
             TorrentGetRequest.TorrentFields.SeedRatioLimit,  // "SeedRatioLimit" → "seedRatioLimit" (camelCase fallback)
         ]);
 
@@ -93,7 +94,7 @@ public class RpcRequestDialectTests
         await Assert.That(fields).Contains("id");
         await Assert.That(fields).Contains("name");
         await Assert.That(fields).Contains("file-count");       // kebab override
-        await Assert.That(fields).Contains("download-dir");     // kebab override (NOT downloadDir)
+        await Assert.That(fields).Contains("downloadDir");      // camelCase override (NOT download-dir)
         await Assert.That(fields).Contains("peer-limit");       // kebab override
         await Assert.That(fields).Contains("seedRatioLimit");   // camelCase fallback
     }
@@ -103,20 +104,194 @@ public class RpcRequestDialectTests
     // =========================================================================
 
     [Test]
-    public async Task NormalizeFields_MixOfCamelAndKebabFields_NormalizesCorrectly()
+    public async Task NormalizeFields_TorrentGet_MixOfCamelAndKebabFields_NormalizesCorrectly()
     {
         // Arrange
         // file-count and peer-limit are the most important kebab exceptions in torrent-get
         var fields = new[] { "Name", "FileCount", "PeerLimit", "HashString" };
 
         // Act
-        var result = _dialect.NormalizeFields(fields);
+        var result = _dialect.NormalizeFields(RpcMethod.TorrentGet, fields);
 
         // Assert
         await Assert.That(result[0]).IsEqualTo("name");           // camelCase fallback
         await Assert.That(result[1]).IsEqualTo("file-count");     // kebab override
         await Assert.That(result[2]).IsEqualTo("peer-limit");     // kebab override
         await Assert.That(result[3]).IsEqualTo("hashString");     // camelCase fallback
+    }
+
+    [Test]
+    public async Task NormalizeFields_SessionGet_DownloadDir_IsKebab()
+    {
+        // Arrange / Act
+        var result = _dialect.NormalizeFields(RpcMethod.SessionGet, new[]
+        {
+            "DownloadDir",      // "DownloadDir" → "download-dir" in the session scope
+            "AltSpeedDown",     // "AltSpeedDown" → "alt-speed-down"
+            "Encryption",       // "Encryption"   → "encryption" (camelCase fallback)
+        });
+
+        // Assert
+        await Assert.That(result[0]).IsEqualTo("download-dir");   // session override (NOT downloadDir)
+        await Assert.That(result[1]).IsEqualTo("alt-speed-down"); // session override
+        await Assert.That(result[2]).IsEqualTo("encryption");     // camelCase fallback
+    }
+
+    [Test]
+    public async Task NormalizeFields_EmptyFields_ReturnsNull()
+    {
+        await Assert.That(_dialect.NormalizeFields(RpcMethod.TorrentGet, [])).IsNull();
+        await Assert.That(_dialect.NormalizeFields(RpcMethod.TorrentGet, null)).IsNull();
+    }
+
+    // =========================================================================
+    // SerializeRequest — argument bodies use legacy wire names
+    // =========================================================================
+    // The server matches argument keys with exact, case-sensitive byte comparison
+    // (tr_quark_lookup), so a camelCase key such as "deleteLocalData" would be
+    // silently ignored — every argument key must be rewritten to the wire format.
+
+    [Test]
+    public async Task SerializeRequest_TorrentAdd_ArgumentKeys_UseLegacyWireNames()
+    {
+        // Arrange
+        var request = new TorrentAddRequest
+        {
+            DownloadDir = "/downloads",
+            PeerLimit = 10,
+            FilesWanted = [1, 2],
+            Paused = true,
+        };
+
+        // Act
+        var json = _dialect.SerializeRequest(RpcMethod.TorrentAdd, request);
+        using var doc = JsonDocument.Parse(json.Value);
+        var args = doc.RootElement.GetProperty("arguments");
+
+        // Assert
+        await Assert.That(args.GetProperty("download-dir").GetString()).IsEqualTo("/downloads");
+        await Assert.That(args.GetProperty("peer-limit").GetInt32()).IsEqualTo(10);
+        await Assert.That(args.GetProperty("files-wanted").EnumerateArray().Select(e => e.GetInt32())).IsEquivalentTo([1, 2]);
+        await Assert.That(args.GetProperty("paused").GetBoolean()).IsTrue();
+        // And none of the unconverted PascalCase/camelCase keys remain
+        await Assert.That(args.TryGetProperty("downloadDir", out _)).IsFalse();
+        await Assert.That(args.TryGetProperty("peerLimit", out _)).IsFalse();
+        await Assert.That(args.TryGetProperty("filesWanted", out _)).IsFalse();
+    }
+
+    [Test]
+    public async Task SerializeRequest_TorrentRemove_ArgumentKeys_UseLegacyWireNames()
+    {
+        // Arrange
+        var request = new TorrentRemoveRequest
+        {
+            Ids = [new TorrentId(1)],
+            DeleteLocalData = true,
+        };
+
+        // Act
+        var json = _dialect.SerializeRequest(RpcMethod.TorrentRemove, request);
+        using var doc = JsonDocument.Parse(json.Value);
+        var args = doc.RootElement.GetProperty("arguments");
+
+        // Assert
+        await Assert.That(args.TryGetProperty("delete-local-data", out var flag)).IsTrue();
+        await Assert.That(flag.GetBoolean()).IsTrue();
+        await Assert.That(args.TryGetProperty("deleteLocalData", out _)).IsFalse();
+    }
+
+    [Test]
+    public async Task SerializeRequest_TorrentSet_ArgumentKeys_UseLegacyWireNames()
+    {
+        // Arrange
+        var request = new TorrentSetRequest
+        {
+            Ids = [new TorrentId(3)],
+            PeerLimit = 5,
+            FilesWanted = [1],
+            PriorityHigh = [2],
+        };
+
+        // Act
+        var json = _dialect.SerializeRequest(RpcMethod.TorrentSet, request);
+        using var doc = JsonDocument.Parse(json.Value);
+        var args = doc.RootElement.GetProperty("arguments");
+
+        // Assert
+        await Assert.That(args.GetProperty("peer-limit").GetInt32()).IsEqualTo(5);
+        await Assert.That(args.GetProperty("files-wanted").EnumerateArray().Single().GetInt32()).IsEqualTo(1);
+        await Assert.That(args.GetProperty("priority-high").EnumerateArray().Single().GetInt32()).IsEqualTo(2);
+        await Assert.That(args.GetProperty("ids").EnumerateArray().Single().GetInt32()).IsEqualTo(3); // camelCase fallback
+    }
+
+    [Test]
+    public async Task SerializeRequest_SessionSet_ArgumentKeys_UseLegacyWireNames()
+    {
+        // Arrange
+        var request = new SessionSetRequest
+        {
+            AltSpeedDown = 100,
+            DownloadDir = "/downloads",
+            PeerPort = 51413,
+        };
+
+        // Act
+        var json = _dialect.SerializeRequest(RpcMethod.SessionSet, request);
+        using var doc = JsonDocument.Parse(json.Value);
+        var args = doc.RootElement.GetProperty("arguments");
+
+        // Assert
+        await Assert.That(args.GetProperty("alt-speed-down").GetInt32()).IsEqualTo(100);
+        await Assert.That(args.GetProperty("download-dir").GetString()).IsEqualTo("/downloads");
+        await Assert.That(args.GetProperty("peer-port").GetInt32()).IsEqualTo(51413);
+        await Assert.That(args.TryGetProperty("downloadDir", out _)).IsFalse();
+    }
+
+    [Test]
+    public async Task SerializeRequest_GroupSet_ArgumentKeys_UseLegacyWireNames()
+    {
+        // Arrange
+        var request = new GroupSetRequest
+        {
+            Name = "slow",
+            SpeedLimitDown = 1024,
+            SpeedLimitDownEnabled = true,
+            SpeedLimitUpEnabled = true,
+        };
+
+        // Act
+        var json = _dialect.SerializeRequest(RpcMethod.GroupSet, request);
+        using var doc = JsonDocument.Parse(json.Value);
+        var args = doc.RootElement.GetProperty("arguments");
+
+        // Assert
+        await Assert.That(args.GetProperty("name").GetString()).IsEqualTo("slow");               // camelCase fallback
+        await Assert.That(args.GetProperty("speed-limit-down").GetInt32()).IsEqualTo(1024);      // session override
+        await Assert.That(args.GetProperty("speed-limit-down-enabled").GetBoolean()).IsTrue();   // session override
+    }
+
+    [Test]
+    public async Task SerializeRequest_NestedArgumentObject_RewritesKeysRecursively()
+    {
+        // Arrange
+        // Request models are flat, but SerializeRequest accepts arbitrary object graphs
+        // (e.g. group-set in JSON-RPC) — key rewriting must recurse into nested objects
+        // and into objects inside arrays.
+        var arguments = new
+        {
+            Ids = new[] { 1 },
+            Options = new { FilesWanted = new[] { 2 } },
+            Nested = new[] { new { DeleteLocalData = true } },
+        };
+
+        // Act
+        var json = _dialect.SerializeRequest(RpcMethod.TorrentAdd, arguments);
+        using var doc = JsonDocument.Parse(json.Value);
+        var args = doc.RootElement.GetProperty("arguments");
+
+        // Assert
+        await Assert.That(args.GetProperty("options").GetProperty("files-wanted").EnumerateArray().Single().GetInt32()).IsEqualTo(2);
+        await Assert.That(args.GetProperty("nested").EnumerateArray().Single().GetProperty("delete-local-data").GetBoolean()).IsTrue();
     }
 
     // =========================================================================

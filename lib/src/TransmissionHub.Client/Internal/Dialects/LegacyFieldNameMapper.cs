@@ -4,9 +4,19 @@ namespace TransmissionHub.Client.Internal.Dialects;
 /// Maps field names between PascalCase and legacy wire format for RPC versions 16 and 17.
 /// </summary>
 /// <remarks>
-/// The legacy Transmission RPC API uses an inconsistent mix of naming conventions:
-/// most fields use <c>camelCase</c>, but some use <c>kebab-case</c>.
-/// This mapper encapsulates the explicit override dictionary for request serialization.
+/// The legacy Transmission RPC API uses an inconsistent mix of naming conventions,
+/// and the same PascalCase name can map to different wire names depending on where
+/// it is used: <c>DownloadDir</c> is <c>downloadDir</c> in the torrent-get field
+/// table, but <c>download-dir</c> in torrent-add arguments and in session fields.
+/// A single PascalCase → wire-name dictionary cannot express this, so the overrides
+/// are split by scope, and callers pick the scope explicitly:
+/// <list type="bullet">
+///   <item><see cref="ToTorrentGetFieldName"/> — the <c>fields</c> array of torrent-get.</item>
+///   <item><see cref="ToSessionFieldName"/> — the <c>fields</c> array of session-get and
+///   the arguments of session-set (the wire names are identical).</item>
+///   <item><see cref="ToArgumentName"/> — request argument bodies of all other methods
+///   (torrent-add, torrent-set, torrent-remove, group-set).</item>
+/// </list>
 /// <para>
 /// This class is used only by <see cref="RpcRequestDialect"/> (v16/v17).
 /// <see cref="JsonRpcDialect"/> (v18+) uses the built-in
@@ -20,25 +30,29 @@ namespace TransmissionHub.Client.Internal.Dialects;
 internal static class LegacyFieldNameMapper
 {
     /// <summary>
-    /// Explicit PascalCase → legacy wire-name overrides for fields that use kebab-case
-    /// or other non-camelCase formats in the legacy API.
-    /// Fields not in this dictionary fall back to camelCase (lowerFirst).
+    /// Explicit PascalCase → wire-name overrides for the <c>fields</c> array of torrent-get.
+    /// The torrent-get field table is camelCase with only these exceptions.
     /// </summary>
-    private static readonly Dictionary<string, string> RequestOverrides = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, string> TorrentGetFieldOverrides = new(StringComparer.Ordinal)
     {
-        // torrent-get / torrent-set / torrent-add
+        // kebab-case exceptions of the torrent-get field table
         ["FileCount"] = "file-count",
         ["PeerLimit"] = "peer-limit",
         ["PrimaryMimeType"] = "primary-mime-type",
-        ["FilesWanted"] = "files-wanted",
-        ["FilesUnwanted"] = "files-unwanted",
-        ["PriorityHigh"] = "priority-high",
-        ["PriorityLow"] = "priority-low",
-        ["PriorityNormal"] = "priority-normal",
-        ["DownloadDir"] = "download-dir",
-        ["DeleteLocalData"] = "delete-local-data",
 
-        // session-get / session-set (kebab-case session fields)
+        // camelCase exception that diverges from every other scope:
+        // torrent-get uses "downloadDir", while torrent-add arguments and session
+        // fields use "download-dir" for the same PascalCase name.
+        ["DownloadDir"] = "downloadDir",
+    };
+
+    /// <summary>
+    /// Explicit PascalCase → wire-name overrides for session fields.
+    /// Used for the <c>fields</c> array of session-get and the arguments of session-set,
+    /// which share the same wire names.
+    /// </summary>
+    private static readonly Dictionary<string, string> SessionFieldOverrides = new(StringComparer.Ordinal)
+    {
         ["AltSpeedDown"] = "alt-speed-down",
         ["AltSpeedEnabled"] = "alt-speed-enabled",
         ["AltSpeedTimeBegin"] = "alt-speed-time-begin",
@@ -53,13 +67,14 @@ internal static class LegacyFieldNameMapper
         ["ConfigDir"] = "config-dir",
         ["DefaultTrackers"] = "default-trackers",
         ["DhtEnabled"] = "dht-enabled",
+        ["DownloadDir"] = "download-dir",
         ["DownloadDirFreeSpace"] = "download-dir-free-space",
         ["DownloadQueueEnabled"] = "download-queue-enabled",
         ["DownloadQueueSize"] = "download-queue-size",
         ["IdleSeedingLimit"] = "idle-seeding-limit",
         ["IdleSeedingLimitEnabled"] = "idle-seeding-limit-enabled",
-        ["IncompleteDirEnabled"] = "incomplete-dir-enabled",
         ["IncompleteDir"] = "incomplete-dir",
+        ["IncompleteDirEnabled"] = "incomplete-dir-enabled",
         ["LpdEnabled"] = "lpd-enabled",
         ["PeerLimitGlobal"] = "peer-limit-global",
         ["PeerLimitPerTorrent"] = "peer-limit-per-torrent",
@@ -81,14 +96,49 @@ internal static class LegacyFieldNameMapper
         ["ScriptTorrentDoneSeedingFilename"] = "script-torrent-done-seeding-filename",
         ["SeedQueueEnabled"] = "seed-queue-enabled",
         ["SeedQueueSize"] = "seed-queue-size",
-        ["SpeedLimitDownEnabled"] = "speed-limit-down-enabled",
         ["SpeedLimitDown"] = "speed-limit-down",
-        ["SpeedLimitUpEnabled"] = "speed-limit-up-enabled",
+        ["SpeedLimitDownEnabled"] = "speed-limit-down-enabled",
         ["SpeedLimitUp"] = "speed-limit-up",
+        ["SpeedLimitUpEnabled"] = "speed-limit-up-enabled",
         ["StartAddedTorrents"] = "start-added-torrents",
         ["TrashOriginalTorrentFiles"] = "trash-original-torrent-files",
         ["UtpEnabled"] = "utp-enabled",
+    };
 
+    /// <summary>
+    /// Explicit PascalCase → wire-name overrides for request argument bodies of
+    /// torrent-scoped methods (torrent-add, torrent-set, torrent-remove, group-set).
+    /// Session-set arguments are covered by <see cref="SessionFieldOverrides"/>, which
+    /// <see cref="ToArgumentName"/> consults as a fallback.
+    /// </summary>
+    private static readonly Dictionary<string, string> ArgumentOverrides = new(StringComparer.Ordinal)
+    {
+        // torrent-add / torrent-set
+        ["FilesWanted"] = "files-wanted",
+        ["FilesUnwanted"] = "files-unwanted",
+        ["PeerLimit"] = "peer-limit",
+        ["PriorityHigh"] = "priority-high",
+        ["PriorityLow"] = "priority-low",
+        ["PriorityNormal"] = "priority-normal",
+
+        // torrent-add
+        ["DownloadDir"] = "download-dir",
+
+        // torrent-remove
+        ["DeleteLocalData"] = "delete-local-data",
+    };
+
+    /// <summary>
+    /// Response-only top-level keys of methods that take no <c>fields</c> parameter
+    /// (session-stats, free-space, port-test).
+    /// </summary>
+    /// <remarks>
+    /// Not used by the current request pipeline: response deserialization goes through
+    /// <see cref="RpcPayloadKeyNormalizer"/>. Retained as part of the legacy name table
+    /// so that legacy (RPC 16) name lookups keep resolving these keys.
+    /// </remarks>
+    private static readonly Dictionary<string, string> ResponseKeyOverrides = new(StringComparer.Ordinal)
+    {
         // session-stats (kebab-case nested objects)
         ["CumulativeStats"] = "cumulative-stats",
         ["CurrentStats"] = "current-stats",
@@ -101,20 +151,81 @@ internal static class LegacyFieldNameMapper
     };
 
     /// <summary>
-    /// Converts a PascalCase field name to the legacy wire-format name.
+    /// Converts a PascalCase field name to its wire name in the <c>fields</c> array of torrent-get.
     /// </summary>
     /// <remarks>
-    /// If the field has an explicit override (e.g. <c>FileCount</c> → <c>file-count</c>),
-    /// that override is returned. Otherwise, the name is converted to camelCase
-    /// (lowercase first letter), which covers the majority of legacy fields.
+    /// If the field has an explicit override (e.g. <c>FileCount</c> → <c>file-count</c>,
+    /// <c>DownloadDir</c> → <c>downloadDir</c>), that override is returned.
+    /// Otherwise, the name is converted to camelCase (lowercase first letter).
+    /// </remarks>
+    /// <param name="pascalCase">The field name in PascalCase.</param>
+    /// <returns>The field name in torrent-get wire format.</returns>
+    public static string ToTorrentGetFieldName(string pascalCase)
+        => Resolve(pascalCase, TorrentGetFieldOverrides);
+
+    /// <summary>
+    /// Converts a PascalCase field name to its wire name in the <c>fields</c> array of
+    /// session-get and the arguments of session-set.
+    /// </summary>
+    /// <remarks>
+    /// If the field has an explicit override (e.g. <c>DownloadDir</c> → <c>download-dir</c>),
+    /// that override is returned. Otherwise, the name is converted to camelCase.
+    /// </remarks>
+    /// <param name="pascalCase">The field name in PascalCase.</param>
+    /// <returns>The field name in session wire format.</returns>
+    public static string ToSessionFieldName(string pascalCase)
+        => Resolve(pascalCase, SessionFieldOverrides);
+
+    /// <summary>
+    /// Converts a PascalCase property name to its wire name in a request argument body.
+    /// </summary>
+    /// <remarks>
+    /// Torrent-scoped overrides are consulted first, then session overrides
+    /// (session-set arguments share the session field wire names), then the name is
+    /// converted to camelCase, which covers the majority of legacy fields.
+    /// </remarks>
+    /// <param name="pascalCase">The property name in PascalCase.</param>
+    /// <returns>The property name in legacy wire format.</returns>
+    public static string ToArgumentName(string pascalCase)
+        => ArgumentOverrides.TryGetValue(pascalCase, out var wireName)
+            ? wireName
+            : Resolve(pascalCase, SessionFieldOverrides);
+
+    /// <summary>
+    /// Converts a PascalCase name to its legacy wire name using a combined lookup
+    /// across all scopes.
+    /// </summary>
+    /// <remarks>
+    /// Predecessor of the scope-specific methods, kept for backward compatibility with
+    /// existing lookups and tests. Argument overrides take precedence, so ambiguous
+    /// names such as <c>DownloadDir</c> resolve to the kebab-case form
+    /// (<c>download-dir</c>). Prefer <see cref="ToTorrentGetFieldName"/>,
+    /// <see cref="ToSessionFieldName"/> and <see cref="ToArgumentName"/> in request code.
     /// </remarks>
     /// <param name="pascalCase">The field name in PascalCase.</param>
     /// <returns>The field name in legacy wire format.</returns>
     public static string ToLegacyWireName(string pascalCase)
+        => ArgumentOverrides.TryGetValue(pascalCase, out var argumentName)
+            ? argumentName
+            : SessionFieldOverrides.TryGetValue(pascalCase, out var sessionName)
+                ? sessionName
+                : Resolve(pascalCase, TorrentGetFieldOverrides, ResponseKeyOverrides);
+
+    /// <summary>
+    /// Resolves <paramref name="pascalCase"/> against the provided override dictionaries in order,
+    /// falling back to camelCase (lowercase first letter).
+    /// </summary>
+    /// <param name="pascalCase">The field name in PascalCase.</param>
+    /// <param name="overrides">The override dictionaries to consult, in precedence order.</param>
+    /// <returns>The resolved wire name.</returns>
+    private static string Resolve(string pascalCase, params Dictionary<string, string>[] overrides)
     {
-        if (RequestOverrides.TryGetValue(pascalCase, out var wireName))
+        foreach (var map in overrides)
         {
-            return wireName;
+            if (map.TryGetValue(pascalCase, out var wireName))
+            {
+                return wireName;
+            }
         }
 
         // Fallback: camelCase (most legacy fields use this convention)

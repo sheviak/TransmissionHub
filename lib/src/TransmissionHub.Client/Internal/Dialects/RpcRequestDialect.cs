@@ -23,16 +23,37 @@ namespace TransmissionHub.Client.Internal.Dialects;
 internal sealed class RpcRequestDialect : IRpcDialect
 {
     /// <summary>
-    /// <see cref="JsonSerializerOptions"/> used to serialize the request envelope and arguments using camelCase,
-    /// matching the majority of legacy field names.
+    /// A <see cref="JsonNamingPolicy"/> that converts property names to the legacy wire format.
     /// </summary>
     /// <remarks>
-    /// The envelope properties (<c>method</c>, <c>arguments</c>, <c>tag</c>) are protected
-    /// by <c>[JsonPropertyName]</c> attributes, so the naming policy only affects the arguments graph.
+    /// A thin adapter over <see cref="LegacyFieldNameMapper.ToArgumentName"/>: explicit
+    /// kebab-case overrides first, then session overrides, then the camelCase fallback
+    /// for the majority of fields. <c>System.Text.Json</c> applies the policy recursively
+    /// to every property of the serialized graph, so no per-node rewriting is needed.
+    /// All naming decisions stay in <see cref="LegacyFieldNameMapper"/> — the dialect
+    /// remains the single transformation point, and the request models shared by all
+    /// protocol versions carry no naming attributes.
+    /// </remarks>
+    private sealed class LegacyNamingPolicy : JsonNamingPolicy
+    {
+        /// <inheritdoc />
+        public override string ConvertName(string name) => LegacyFieldNameMapper.ToArgumentName(name);
+    }
+
+    /// <summary>
+    /// <see cref="JsonSerializerOptions"/> used to serialize the request envelope and arguments.
+    /// </summary>
+    /// <remarks>
+    /// The <see cref="LegacyNamingPolicy"/> converts argument property keys to the legacy
+    /// wire format (e.g. <c>DownloadDir</c> → <c>download-dir</c>). The envelope properties
+    /// (<c>method</c>, <c>arguments</c>, <c>tag</c>) and response envelope properties
+    /// (<c>result</c>, <c>arguments</c>, <c>tag</c>) are not in the override maps, so they
+    /// resolve through the camelCase fallback. The response payload itself is a
+    /// <see cref="JsonElement"/> untouched by the policy.
     /// </remarks>
     private static readonly JsonSerializerOptions Options = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = new LegacyNamingPolicy(),
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
@@ -59,7 +80,7 @@ internal sealed class RpcRequestDialect : IRpcDialect
 
     /// <inheritdoc />
     [return: NotNullIfNotNull(nameof(pascalCaseFields))]
-    public IReadOnlyList<string>? NormalizeFields(IReadOnlyList<string>? pascalCaseFields)
+    public IReadOnlyList<string>? NormalizeFields(RpcMethod method, IReadOnlyList<string>? pascalCaseFields)
     {
         if (pascalCaseFields is not { Count: > 0 })
         {
@@ -70,7 +91,15 @@ internal sealed class RpcRequestDialect : IRpcDialect
 
         for (var i = 0; i < pascalCaseFields.Count; i++)
         {
-            result[i] = LegacyFieldNameMapper.ToLegacyWireName(pascalCaseFields[i]);
+            // The same PascalCase name can map to different wire names per method
+            // (e.g. DownloadDir is "downloadDir" for torrent-get but "download-dir"
+            // for session-get), so the scope must follow the requested method.
+            result[i] = method switch
+            {
+                RpcMethod.TorrentGet => LegacyFieldNameMapper.ToTorrentGetFieldName(pascalCaseFields[i]),
+                RpcMethod.SessionGet => LegacyFieldNameMapper.ToSessionFieldName(pascalCaseFields[i]),
+                _ => LegacyFieldNameMapper.ToArgumentName(pascalCaseFields[i]),
+            };
         }
 
         return result;

@@ -45,8 +45,10 @@ internal sealed class JsonRpcDialect : IRpcDialect
 
     /// <inheritdoc />
     [return: NotNullIfNotNull(nameof(pascalCaseFields))]
-    public IReadOnlyList<string>? NormalizeFields(IReadOnlyList<string>? pascalCaseFields)
+    public IReadOnlyList<string>? NormalizeFields(RpcMethod method, IReadOnlyList<string>? pascalCaseFields)
     {
+        // The method scope is irrelevant here: v18+ field names are uniformly
+        // snake_case, so a single conversion covers every method.
         if (pascalCaseFields is not { Count: > 0 })
         {
             return null;

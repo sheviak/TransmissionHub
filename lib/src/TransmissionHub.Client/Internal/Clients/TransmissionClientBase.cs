@@ -71,7 +71,7 @@ internal abstract class TransmissionClientBase : ITransmissionClient
     /// <inheritdoc />
     public virtual Task<Result<TorrentGetResponse>> TorrentGetAsync(TorrentGetRequest request, CancellationToken cancellationToken = default)
     {
-        var normalizedFields = _rpcDialect.NormalizeFields(request.Fields);
+        var normalizedFields = _rpcDialect.NormalizeFields(RpcMethod.TorrentGet, request.Fields);
         var updatedRequest = request with { Fields = normalizedFields };
         return FetchAsync<TorrentGetRequest, TorrentGetResponse>(RpcMethod.TorrentGet, updatedRequest, cancellationToken);
     }
@@ -111,7 +111,7 @@ internal abstract class TransmissionClientBase : ITransmissionClient
     /// <inheritdoc />
     public virtual Task<Result<SessionGetResponse>> SessionGetAsync(SessionGetRequest request, CancellationToken cancellationToken = default)
     {
-        var normalizedFields = _rpcDialect.NormalizeFields(request.Fields);
+        var normalizedFields = _rpcDialect.NormalizeFields(RpcMethod.SessionGet, request.Fields);
         var updatedRequest = new SessionGetRequest { Fields = normalizedFields };
         return FetchAsync<SessionGetRequest, SessionGetResponse>(RpcMethod.SessionGet, updatedRequest, cancellationToken);
     }
